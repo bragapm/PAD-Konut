@@ -80,12 +80,12 @@ const handleDrop = (e: any) => {
       :class="[
         onDragOver || selectedFile ? 'border-brand-500' : 'border-grey-600',
         selectedFile ? 'bg-brand-950' : 'bg-grey-700',
-        'p-1 border rounded-xxs cursor-pointer',
+        'p-1 border rounded-sm cursor-pointer',
       ]"
     >
       <p class="text-2xs text-grey-400 ml-2 mb-1 mt-2">{{ title }}</p>
       <div
-        class="flex items-center justify-between bg-black/30 rounded-xxs px-2 py-4"
+        class="flex items-center justify-between bg-black/30 rounded-sm px-2 py-4"
       >
         <div>
           <p

@@ -7,7 +7,7 @@ import {
 export default (router, { database, logger }) => {
   router.get("/:layerName", async (req, res, next) => {
     const { accountability } = req;
-    let { z, x, y } = req.query;
+    let { z, x, y, attributes } = req.query;
     const { layerName } = req.params;
 
     // Check if the user has permission to access the requested layer
@@ -20,6 +20,15 @@ export default (router, { database, logger }) => {
       return next(new RouteNotFoundError({ path: "/mvt" + req.path }));
     }
 
+    // Validate attributes query
+    if (attributes === "geom") {
+      return next(
+        new InvalidQueryError({
+          reason: '"geom" column cannot be used as an attribute',
+        })
+      );
+    }
+
     // Parse and validate tile coordinates
     z = parseInt(z);
     x = parseInt(x);
@@ -29,21 +38,25 @@ export default (router, { database, logger }) => {
     }
 
     // Generate a unique cache key for the requested tile
-    const cacheKey = `mvt_${layerName}_${z}_${x}_${y}`;
+    const cacheKey = `${layerName}_${z}_${x}_${y}_${attributes || ""}`;
 
     // Attempt to retrieve the tile from cache
+    let cacheExists = false;
     try {
       const cacheResult = await database("vector_tile_cache")
-        .select("value")
+        .select("value", "expired_at")
         .where("key", cacheKey)
         .first();
 
       if (cacheResult) {
-        res.setHeader("Content-Type", "application/x-protobuf");
-        return res.send(Buffer.from(cacheResult.value));
+        cacheExists = true;
+        if (cacheResult.expired_at > new Date()) {
+          res.setHeader("Content-Type", "application/x-protobuf");
+          return res.send(cacheResult.value);
+        }
       }
-    } catch (cacheError) {
-      logger.error("Cache lookup failed:", cacheError);
+    } catch (error) {
+      logger.error(error);
       return next(
         new ServiceUnavailableError({
           service: "mvt",
@@ -56,13 +69,7 @@ export default (router, { database, logger }) => {
     let layerConfig;
     try {
       layerConfig = await database("vector_tiles")
-        .select(
-          "fill_class_columns",
-          "line_class_columns",
-          "circle_class_columns",
-          "symbol_class_columns",
-          "cache_duration"
-        )
+        .select("cache_duration")
         .where("layer_name", layerName)
         .first();
     } catch (error) {
@@ -80,50 +87,30 @@ export default (router, { database, logger }) => {
     }
 
     // Prepare query parameters for fetching the tile
-    let queryParams = [z, x, y];
+    const queryParams = { z, x, y, layerName };
 
-    let classColumnParam = "";
-    const classColumnsArr = [];
-    if (layerConfig.fill_class_columns) {
-      classColumnsArr.push(...layerConfig.fill_class_columns.split(","));
-    }
-    if (layerConfig.line_class_columns) {
-      classColumnsArr.push(...layerConfig.line_class_columns.split(","));
-    }
-    if (layerConfig.circle_class_columns) {
-      classColumnsArr.push(...layerConfig.circle_class_columns.split(","));
-    }
-    if (layerConfig.symbol_class_columns) {
-      classColumnsArr.push(...layerConfig.symbol_class_columns.split(","));
-    }
-    if (classColumnsArr.length) {
-      const classColumnsSet = new Set(classColumnsArr);
-      classColumnsSet.forEach((col) => {
-        classColumnParam += ", ??";
-        queryParams.push(col);
-      });
+    let attributesParam = "";
+    if (attributes) {
+      attributesParam = ", :attributes:";
+      queryParams.attributes = attributes;
     }
 
     // SQL query to generate the Mapbox Vector Tile (MVT)
     let mvtQuery = `
       WITH tile_envelope AS (
-        SELECT ST_TileEnvelope(?, ?, ?) tile
+        SELECT ST_TileEnvelope(:z, :x, :y) tile
       ), mvtgeom_table AS (
-        SELECT ST_AsMVTGeom(ST_Transform(main.geom, 3857), tile) geom, ogc_fid${classColumnParam}
-        FROM ?? main
+        SELECT ST_AsMVTGeom(ST_Transform(main.geom, 3857), tile) geom, ogc_fid${attributesParam}
+        FROM :layerName: main
         INNER JOIN tile_envelope ON main.geom && ST_Transform(tile, 4326)
       )
-      SELECT ST_AsMVT(mvtgeom_table, ?, 4096, 'geom', 'ogc_fid') mvt_buff
+      SELECT ST_AsMVT(mvtgeom_table, :layerName, 4096, 'geom', 'ogc_fid') mvt_buff
       FROM mvtgeom_table
     `;
 
     // Execute the query and send the result
     try {
-      const result = await database.raw(mvtQuery, [
-        ...queryParams,
-        layerName,
-        layerName,
-      ]);
+      const result = await database.raw(mvtQuery, queryParams);
       const mvtBuff = result.rows[0]?.mvt_buff;
 
       if (mvtBuff && mvtBuff.length) {
@@ -137,13 +124,19 @@ export default (router, { database, logger }) => {
           );
 
           try {
-            await database("vector_tile_cache").insert({
-              key: cacheKey,
-              value: mvtBuff,
-              expired_at: expirationTime,
-            });
-          } catch (cacheUpdateError) {
-            logger.error("Failed to update cache:", cacheUpdateError);
+            if (cacheExists) {
+              await database("vector_tile_cache")
+                .update({ value: mvtBuff, expired_at: expirationTime })
+                .where("key", cacheKey);
+            } else {
+              await database("vector_tile_cache").insert({
+                key: cacheKey,
+                value: mvtBuff,
+                expired_at: expirationTime,
+              });
+            }
+          } catch (error) {
+            logger.error(error);
           }
         }
 
@@ -152,6 +145,13 @@ export default (router, { database, logger }) => {
         return res.status(204).send();
       }
     } catch (error) {
+      if (error.routine === "errorMissingColumn") {
+        return next(
+          new InvalidQueryError({
+            reason: `"${attributes}" column does not exist in "${layerName}" table`,
+          })
+        );
+      }
       logger.error(error);
       return next(
         new ServiceUnavailableError({

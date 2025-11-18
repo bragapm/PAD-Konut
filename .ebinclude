@@ -6,3 +6,4 @@ extensions/Dockerfile
 web/.output/
 web/Dockerfile
 docker-compose.yml
+subscriber/

@@ -1,5 +1,4 @@
 <script lang="ts" setup>
-import { TransitionRoot } from "@headlessui/vue";
 import type { Category } from "~/utils/types";
 import IcArrowReg from "~/assets/icons/ic-arrow-reg.svg";
 
@@ -15,10 +14,9 @@ const { selectedCategory } = storeToRefs(catalogueStore);
 
 <template>
   <UButton
-    :ui="{ rounded: 'rounded-xxs' }"
     :label="item.category_name"
-    :variant="selectedCategory === item.category_id ? 'solid' : 'ghost'"
-    color="grey"
+    variant="ghost"
+    color="gray"
     @click="
       () => {
         if (item.subcategories.length > 0) {
@@ -28,7 +26,7 @@ const { selectedCategory } = storeToRefs(catalogueStore);
         }
       }
     "
-    class="text-xs text-left flex justify-between"
+    :class="['text-xs text-left flex justify-between',selectedCategory === item.category_id && 'bg-brand-950']"
   >
     <template #trailing v-if="item.subcategories.length > 0">
       <div
@@ -41,21 +39,20 @@ const { selectedCategory } = storeToRefs(catalogueStore);
       </div>
     </template>
   </UButton>
-  <TransitionRoot
-    v-if="item.subcategories.length > 0"
-    :show="isExpand"
-    enter="transition-all ease-in duration-300"
-    enterFrom="max-h-0 "
-    enterTo="max-h-[100rem]"
-    leave="transition-all ease-out duration-300"
-    leaveFrom="max-h-[100rem]"
-    leaveTo="max-h-0 "
-    class="w-full overflow-auto flex flex-col gap-2"
+  <Transition
+    enter-active-class="transition-all ease-in duration-300"
+    enter-from-class="max-h-0"
+    enter-to-class="max-h-[100rem]"
+    leave-active-class="transition-all ease-out duration-300"
+    leave-from-class="max-h-[100rem]"
+    leave-to-class="max-h-0"
   >
-    <MapManagementCatalogueSubcategory
-      v-for="subcategory of item.subcategories"
-      :key="subcategory.category_id"
-      :item="subcategory"
-    />
-  </TransitionRoot>
+    <div v-if="item.subcategories.length > 0 && isExpand" class="w-full overflow-auto flex flex-col gap-2">
+      <MapManagementCatalogueSubcategory
+        v-for="subcategory of item.subcategories"
+        :key="subcategory.category_id"
+        :item="subcategory"
+      />
+    </div>
+  </Transition>
 </template>

@@ -16,6 +16,7 @@ import type {
   SymbolStylesConfig,
   ExternalTilesConfig,
   ExternalTiles,
+  ExternalVectorConfig,
 } from "~/utils/types";
 import {
   geomTypeCircle,
@@ -110,7 +111,7 @@ export const useMapLayer = defineStore("maplayer", () => {
               string,
               string | number | boolean | null
             >
-          )["icon_image_id"] = propValue;
+          )["layout_icon_image"] = propValue;
         }
       } else {
         (selected as Record<string, any>)[propName] = propValue;
@@ -161,66 +162,71 @@ export const useMapLayer = defineStore("maplayer", () => {
     externalTiles?: {
       data: LayerConfigLists;
     };
+    externalVector?: {
+      data: LayerConfigLists;
+    };
   }) => {
     const layersArr: LayerLists[] = [];
     for (const [key, value] of Object.entries(layers)) {
       value.data.forEach((el) => {
-        if (key === "vectorTiles") {
-          const item = JSON.parse(JSON.stringify(el as VectorTilesConfig));
+        if (key === "vectorTiles" || key === "externalVector") {
+          const item = JSON.parse(
+            JSON.stringify(el as VectorTilesConfig | ExternalVectorConfig)
+          );
           delete item.circle_style;
           delete item.symbol_style;
           delete item.line_style;
           delete item.fill_style;
-          if ((el as VectorTilesConfig).circle_style) {
+          if ((el as VectorTilesConfig | ExternalVectorConfig).circle_style) {
             layersArr.push({
               ...item,
               layer_id: item.layer_id + "_circle",
               layer_alias: item.layer_alias || item.layer_name,
-              layer_style: (el as VectorTilesConfig)
+              layer_style: (el as VectorTilesConfig | ExternalVectorConfig)
                 .circle_style as CircleStylesConfig,
-              source: "vector_tiles",
+              source:
+                key === "vectorTiles" ? "vector_tiles" : "external_vector",
               geometry_type: geomTypeCircle,
               dimension: "2D",
             });
           }
-          if ((el as VectorTilesConfig).symbol_style) {
+          if ((el as VectorTilesConfig | ExternalVectorConfig).symbol_style) {
             layersArr.push({
               ...item,
               layer_id: item.layer_id + "_symbol",
               layer_alias: item.layer_alias || item.layer_name,
               layer_style: {
-                ...((el as VectorTilesConfig)
+                ...((el as VectorTilesConfig | ExternalVectorConfig)
                   .symbol_style as SymbolStylesConfig),
-                icon_image_id: (el as VectorTilesConfig)?.symbol_style
-                  ?.layout_icon_image?.id,
-                icon_image_title: (el as VectorTilesConfig)?.symbol_style
-                  ?.layout_icon_image?.title,
               },
-              source: "vector_tiles",
+              source:
+                key === "vectorTiles" ? "vector_tiles" : "external_vector",
               geometry_type: geomTypeSymbol,
               dimension: "2D",
             });
           }
-          if ((el as VectorTilesConfig).line_style) {
+          if ((el as VectorTilesConfig | ExternalVectorConfig).line_style) {
             layersArr.push({
               ...item,
               layer_id: item.layer_id + "_line",
               layer_alias: item.layer_alias || item.layer_name,
-              layer_style: (el as VectorTilesConfig)
+              layer_style: (el as VectorTilesConfig | ExternalVectorConfig)
                 .line_style as LineStylesConfig,
-              source: "vector_tiles",
+              source:
+                key === "vectorTiles" ? "vector_tiles" : "external_vector",
               geometry_type: geomTypeLine,
               dimension: "2D",
             });
           }
-          if ((el as VectorTilesConfig).fill_style) {
+          if ((el as VectorTilesConfig | ExternalVectorConfig).fill_style) {
             layersArr.push({
               ...item,
               layer_id: item.layer_id + "_fill",
               layer_alias: item.layer_alias || item.layer_name,
-              layer_style: (el as VectorTilesConfig)
+              layer_style: (el as VectorTilesConfig | ExternalVectorConfig)
                 .fill_style as FillStylesConfig,
-              source: "vector_tiles",
+              source:
+                key === "vectorTiles" ? "vector_tiles" : "external_vector",
               geometry_type: geomTypePolygon,
               dimension: "2D",
             });
@@ -354,58 +360,78 @@ export const useMapLayer = defineStore("maplayer", () => {
       const { data: layers, pending } = await useAsyncData(
         "map-layer-tiles",
         async () => {
-          const [vectorTiles, rasterTiles, threeDTiles, externalTiles] =
-            await Promise.all<{
-              data: LayerConfigLists;
-            }>([
-              $fetch(
-                "/panel/items/vector_tiles?fields=layer_id,layer_name,geometry_type,bounds,minzoom,maxzoom,layer_alias,hover_popup_columns,click_popup_columns,image_columns,active,description,preview,category.*,fill_style.*,line_style.*,circle_style.*,symbol_style.*.*&filter[active][_eq]=true&sort=layer_name",
-                {
-                  method: "GET",
-                  headers: {
-                    "Content-Type": "application/json",
-                    Authorization: "Bearer " + authStore.accessToken,
-                  },
-                }
-              ),
-              $fetch(
-                "/panel/items/raster_tiles?fields=layer_id,bounds,minzoom,maxzoom,terrain_rgb,layer_alias,active,visible,protocol,color_steps,category.*,preview,description&filter[active][_eq]=true&sort=layer_alias",
-                {
-                  method: "GET",
-                  headers: {
-                    "Content-Type": "application/json",
-                    Authorization: "Bearer " + authStore.accessToken,
-                  },
-                }
-              ),
-              $fetch(
-                "/panel/items/three_d_tiles?fields=layer_id,layer_alias,active,visible,opacity,point_color,point_size,category.*,preview,description&filter[active][_eq]=true&sort=layer_alias",
-                {
-                  method: "GET",
-                  headers: {
-                    "Content-Type": "application/json",
-                    Authorization: "Bearer " + authStore.accessToken,
-                  },
-                }
-              ),
-              $fetch(
-                "/panel/items/external_tiles?fields=visible,layer_id,tile_type,is_tilejson,tile_url,bounds,minzoom,maxzoom,tile_size,layer_alias,category.*,listed,active&filter[active][_eq]=true&sort=layer_alias",
-                {
-                  method: "GET",
-                  headers: {
-                    "Content-Type": "application/json",
-                    Authorization: "Bearer " + authStore.accessToken,
-                  },
-                }
-              ),
-            ]);
+          const [
+            vectorTiles,
+            rasterTiles,
+            threeDTiles,
+            externalTiles,
+            externalVector,
+          ] = await Promise.all<{
+            data: LayerConfigLists;
+          }>([
+            $fetch(
+              "/panel/items/vector_tiles?fields=layer_id,layer_name,geometry_type,bounds,minzoom,maxzoom,layer_alias,hover_popup_columns,click_popup_columns,image_columns,active,description,preview,category.*,fill_style.*,line_style.*,circle_style.*,symbol_style.*&filter[active][_eq]=true&sort=layer_name",
+              {
+                method: "GET",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: "Bearer " + authStore.accessToken,
+                },
+              }
+            ),
+            $fetch(
+              "/panel/items/raster_tiles?fields=layer_id,bounds,minzoom,maxzoom,terrain_rgb,layer_alias,active,visible,protocol,color_steps,category.*,preview,description&filter[active][_eq]=true&sort=layer_alias",
+              {
+                method: "GET",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: "Bearer " + authStore.accessToken,
+                },
+              }
+            ),
+            $fetch(
+              "/panel/items/three_d_tiles?fields=layer_id,layer_alias,active,visible,opacity,point_color,point_size,category.*,preview,description&filter[active][_eq]=true&sort=layer_alias",
+              {
+                method: "GET",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: "Bearer " + authStore.accessToken,
+                },
+              }
+            ),
+            $fetch(
+              "/panel/items/external_tiles?fields=visible,layer_id,tile_type,is_tilejson,tile_url,bounds,minzoom,maxzoom,tile_size,layer_alias,category.*,listed,active&filter[active][_eq]=true&sort=layer_alias",
+              {
+                method: "GET",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: "Bearer " + authStore.accessToken,
+                },
+              }
+            ),
+            $fetch(
+              "/panel/items/external_vector?fields=layer_id,layer_alias,bounds,preview,description,category.*,hover_popup_columns,click_popup_columns,image_columns,listed,active,fill_style.*,line_style.*,circle_style.*,symbol_style.*.*&filter[active][_eq]=true&sort=layer_alias",
+              {
+                method: "GET",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: "Bearer " + authStore.accessToken,
+                },
+              }
+            ),
+          ]);
 
-          return { vectorTiles, rasterTiles, threeDTiles, externalTiles };
+          return {
+            vectorTiles,
+            rasterTiles,
+            threeDTiles,
+            externalTiles,
+            externalVector,
+          };
         }
       );
 
       const allLayerData: LayerLists[] = [];
-
       if (layers.value) {
         allLayerData.push(...getLayersArr(layers.value));
       }

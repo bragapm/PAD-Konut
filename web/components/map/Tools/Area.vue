@@ -1,36 +1,47 @@
 <script lang="ts" setup>
-import { useDrawControl } from "~/utils/useDrawControl";
+import { useTerraDrawControl } from "~/utils/useTerraDrawControl";
 import area from "@turf/area";
 import { convertArea } from "@turf/helpers";
 
 const areaCount = ref<number>(0);
 const areaUnit = ref<string>("m");
 
-const { drawer } = useDrawControl({
-  mode: "draw_polygon",
-  onCreated: (feature) => {
+const calculateArea = (feature: any) => {
+  if (feature && feature.geometry.type === "Polygon") {
+    const calculatedArea = area(feature);
     areaCount.value =
       areaUnit.value === "m"
-        ? parseFloat(area(feature).toFixed(2))
+        ? parseFloat(calculatedArea.toFixed(2))
         : parseFloat(
-            convertArea(area(feature), "meters", "kilometers").toFixed(2)
+            convertArea(calculatedArea, "meters", "kilometers").toFixed(2)
           );
+  }
+};
+
+const { initialize, clear, destroy } = useTerraDrawControl({
+  mode: "polygon",
+  onFinish: (_id, feature) => {
+    calculateArea(feature);
   },
-  onUpdated: (feature) => {
-    areaCount.value =
-      areaUnit.value === "m"
-        ? parseFloat(area(feature).toFixed(2))
-        : parseFloat(
-            convertArea(area(feature), "meters", "kilometers").toFixed(2)
-          );
+  onChange: (_ids, features) => {
+    if (features.length > 0) {
+      calculateArea(features[0]);
+    }
   },
+});
+
+onMounted(() => {
+  initialize();
 });
 
 const handleReset = () => {
   areaCount.value = 0;
-  drawer?.deleteAll();
-  drawer?.changeMode("draw_polygon");
+  clear();
 };
+
+onUnmounted(() => {
+  destroy();
+});
 </script>
 
 <template>
@@ -43,10 +54,9 @@ const handleReset = () => {
         v-model="areaCount"
         readonly
         color="gray"
-        :ui="{ rounded: 'rounded-xxs' }"
         placeholder="0"
         class="w-full"
-        size="2xs"
+        size="xs"
       >
         <template #trailing>
           <span class="text-grey-500 dark:text-grey-400 text-xs"
@@ -64,10 +74,9 @@ const handleReset = () => {
             }
           }
         "
-        :color="areaUnit === 'm' ? 'brand' : 'grey'"
+        :color="areaUnit === 'm' ? 'brand' : 'gray'"
         variant="outline"
-        :ui="{ rounded: 'rounded-[4px]' }"
-        class="text-2xs p-1 gap-0"
+        class="text-2xs p-1 gap-0 rounded-sm"
       >
         Meter<sup>2</sup>
       </UButton>
@@ -80,10 +89,9 @@ const handleReset = () => {
             }
           }
         "
-        :color="areaUnit === 'km' ? 'brand' : 'grey'"
+        :color="areaUnit === 'km' ? 'brand' : 'gray'"
         variant="outline"
-        :ui="{ rounded: 'rounded-[4px]' }"
-        class="text-2xs p-1 gap-0"
+        class="text-2xs p-1 gap-0 rounded-sm"
         >Kilometer<sup>2</sup></UButton
       >
     </div>
@@ -92,10 +100,9 @@ const handleReset = () => {
     <UButton
       :disabled="areaCount === 0"
       @click="handleReset"
-      color="grey"
+      color="gray"
       variant="outline"
-      :ui="{ rounded: 'rounded-[4px]' }"
-      class="w-full justify-center text-sm"
+      class="w-full justify-center text-sm rounded-sm"
       >Reset</UButton
     >
   </div>

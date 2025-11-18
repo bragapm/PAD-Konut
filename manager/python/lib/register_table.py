@@ -1,10 +1,40 @@
 from uuid import uuid4
 
-from psycopg2.extras import Json
-
-from utils import logger, create_bbox_polygon
-from lib.get_header_info import HeaderInfo
 from lib.clear_directus_cache import clear_directus_cache
+from lib.get_header_info import HeaderInfo
+from psycopg2.extras import Json
+from utils import create_bbox_polygon, logger
+
+
+def validate_permission_type(conn, uploader, permission_type):
+    # if uploader is not an admin, only allow "roles" or "roles+public"
+    # default to admin if uploader is admin, and roles with their user role if not admin
+    allowed_role = None
+    with conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT admin_access, role FROM directus_users u INNER JOIN directus_roles r ON role = r.id WHERE u.id = %s",
+                [uploader],
+            )
+            user_role = cur.fetchone()
+            if not user_role:
+                raise Exception("Uploader does not exists")
+            if permission_type:
+                if user_role[0]:
+                    if permission_type not in ["admin", "roles", "roles+public"]:
+                        permission_type = "admin"
+                        # TODO add allowed_roles selected by admin
+                else:
+                    allowed_role = user_role[1]
+                    if permission_type not in ["roles", "roles+public"]:
+                        permission_type = "roles"
+            else:
+                if user_role[0]:
+                    permission_type = "admin"
+                else:
+                    permission_type = "roles"
+                    allowed_role = user_role[1]
+    return permission_type, allowed_role
 
 
 def register_table_to_directus(
@@ -13,11 +43,13 @@ def register_table_to_directus(
     header_info: HeaderInfo,
     uploader: str,
     additional_config: dict | None,
-    with_invalidate=True,
+    with_invalidate: bool = True,
+    kml_style_id: int | None = None,
 ):
     layer_alias = None
     listed = False
     permission_type = "admin"
+    allowed_role = None
     fill_style = None
     line_style = None
     circle_style = None
@@ -27,9 +59,9 @@ def register_table_to_directus(
     if additional_config is not None:
         layer_alias = additional_config.get("layer_alias", None)
         listed = additional_config.get("listed", False)
-        # TODO also get permission type from additional_config, but validate before use
-        # i.e. if uploader is not an admin, only allow "roles" or "roles+public"
-        permission_type = "roles+public"
+        permission_type, allowed_role = validate_permission_type(
+            conn, uploader, additional_config.get("permission_type", None)
+        )
         preview = additional_config.get("preview", None)
         description = additional_config.get("description", None)
 
@@ -64,6 +96,15 @@ def register_table_to_directus(
                             f"Failed to define default style for geom_name: {header_info['geom_name']}"
                         )
 
+            if kml_style_id:
+                match header_info["geom_name"]:
+                    case "POLYGON" | "MULTIPOLYGON":
+                        fill_style = kml_style_id
+                    case "LINESTRING" | "MULTILINESTRING":
+                        line_style = kml_style_id
+                    case "POINT" | "MULTIPOINT":
+                        circle_style = kml_style_id
+
             # Calculate bbox from PostGIS using ST_Extent
             cur.execute(f"SELECT ST_Extent(geom) FROM {table_name}")
             bbox_result = cur.fetchone()
@@ -77,10 +118,11 @@ def register_table_to_directus(
             bbox_polygon = create_bbox_polygon(lon_min, lat_min, lon_max, lat_max)
 
             # Insert data into vector_tiles table
+            layer_id = str(uuid4())
             cur.execute(
                 "INSERT INTO vector_tiles(layer_id, layer_name, geometry_type, user_created, bounds, layer_alias, listed, fill_style, line_style, circle_style, permission_type, preview, description) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
                 [
-                    str(uuid4()),
+                    layer_id,
                     table_name,
                     (
                         "MULTIPOLYGON"
@@ -99,9 +141,11 @@ def register_table_to_directus(
                     description,
                 ],
             )
-
-            # TODO: do many-to-many insertion for allowed_roles
-
+            if allowed_role:
+                cur.execute(
+                    "INSERT INTO vector_tiles_directus_roles(vector_tiles_layer_id, directus_roles_id) VALUES(%s, %s)",
+                    [layer_id, allowed_role],
+                )
             # handle public only, because permission for allowed roles are handled by junction table insertion trigger
             if permission_type == "roles+public":
                 cur.execute(
@@ -127,26 +171,34 @@ def register_raster_tile(
     z_max: int,
     uploader: str,
     is_terrain: bool,
+    cog_file: str | None,
     additional_config: dict | None,
 ):
     listed = False
     permission_type = "admin"
+    allowed_role = None
     preview = None
     description = None
+    protocol = "default"
+    color_steps = None
 
     if additional_config is not None:
         listed = additional_config.get("listed", False)
-        # TODO also get permission type from additional_config, but validate before use
-        # i.e. if uploader is not an admin, only allow "roles" or "roles+public"
-        permission_type = "roles+public"
+        permission_type, allowed_role = validate_permission_type(
+            conn, uploader, additional_config.get("permission_type", None)
+        )
         preview = additional_config.get("preview", None)
         description = additional_config.get("description", None)
+        protocol = additional_config.get("protocol", "default")
+        if protocol not in ["default", "greyscale"]:
+            protocol = "default"
+        color_steps = additional_config.get("color_steps", None)
 
     with conn:
         with conn.cursor() as cur:
             cur.execute(
-                """INSERT INTO raster_tiles(layer_id, layer_alias, bounds, minzoom, maxzoom, terrain_rgb, user_created, listed, permission_type, preview, description)
-            VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                """INSERT INTO raster_tiles(layer_id, layer_alias, bounds, minzoom, maxzoom, terrain_rgb, protocol, color_steps, cog_file, user_created, listed, permission_type, preview, description)
+            VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
                 [
                     layer_id,
                     raster_alias,
@@ -154,6 +206,9 @@ def register_raster_tile(
                     z_min,
                     z_max,
                     is_terrain,
+                    protocol,
+                    Json(color_steps),
+                    cog_file,
                     uploader,
                     listed,
                     permission_type,
@@ -161,6 +216,11 @@ def register_raster_tile(
                     description,
                 ],
             )
+            if allowed_role:
+                cur.execute(
+                    "INSERT INTO raster_tiles_directus_roles(raster_tiles_layer_id, directus_roles_id) VALUES(%s, %s)",
+                    [layer_id, allowed_role],
+                )
     logger.info("Register to raster tiles")
 
 
@@ -173,6 +233,7 @@ def register_3d_tile(
 ):
     listed = False
     permission_type = "admin"
+    allowed_role = None
     opacity = None
     point_size = None
     preview = None
@@ -180,9 +241,9 @@ def register_3d_tile(
 
     if additional_config is not None:
         listed = additional_config.get("listed", False)
-        # TODO also get permission type from additional_config, but validate before use
-        # i.e. if uploader is not an admin, only allow "roles" or "roles+public"
-        permission_type = "roles+public"
+        permission_type, allowed_role = validate_permission_type(
+            conn, uploader, additional_config.get("permission_type", None)
+        )
         preview = additional_config.get("preview", None)
         description = additional_config.get("description", None)
 
@@ -208,3 +269,8 @@ def register_3d_tile(
                     description,
                 ],
             )
+            if allowed_role:
+                cur.execute(
+                    "INSERT INTO three_d_tiles_directus_roles(three_d_tiles_layer_id, directus_roles_id) VALUES(%s, %s)",
+                    [layer_id, allowed_role],
+                )

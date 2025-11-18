@@ -35,7 +35,7 @@ const creditsWithReplacedYear = computed(() => {
 
 <template>
   <div
-    class="grid grid-cols-4 gap-x-6 bg-grey-800 rounded-lg p-11 text-grey-50"
+    class="grid grid-cols-4 gap-x-6 bg-grey-800 rounded-[20px] p-11 text-grey-50"
   >
     <div class="flex flex-col justify-between gap-y-3.5 col-span-2">
       <div class="space-y-3">

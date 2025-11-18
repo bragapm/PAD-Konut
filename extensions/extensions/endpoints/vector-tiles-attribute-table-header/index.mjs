@@ -36,16 +36,24 @@ export default (router, { database, logger, services }) => {
       return next(new RouteNotFoundError({ path: "/table-header" + req.path }));
     }
 
-    const permissions = accountability.permissions.filter(
-      (el) => el.collection === layerName && el.action === "read"
-    );
-    if (!accountability.admin && !permissions.length) {
-      return next(new RouteNotFoundError({ path: "/table-header" + req.path }));
-    }
-
-    const allowedFields = permissions[0].fields ?? [];
-    if (!allowedFields.length) {
-      return next(new RouteNotFoundError({ path: "/table-header" + req.path }));
+    let allowedFields = [];
+    if (accountability.admin) {
+      allowedFields.push("*");
+    } else {
+      const permissions = accountability.permissions.filter(
+        (el) => el.collection === layerName && el.action === "read"
+      );
+      if (!permissions.length) {
+        return next(
+          new RouteNotFoundError({ path: "/table-header" + req.path })
+        );
+      }
+      allowedFields = permissions[0].fields ?? [];
+      if (!allowedFields.length) {
+        return next(
+          new RouteNotFoundError({ path: "/table-header" + req.path })
+        );
+      }
     }
 
     let fields = [];

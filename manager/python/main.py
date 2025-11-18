@@ -6,7 +6,6 @@ import sys
 import tasks
 from utils import logger
 
-
 # If run as simple python script
 # Ex : python main.py Kesesuaian_KDB_RTR.zip kesesuaian_5
 
@@ -20,12 +19,18 @@ def main():
     # table_name = sys.argv[2]
 
     tasks.vector_transform(
+        maxzoom=None,
+        minzoom=None,
         uploader="49015332-8717-411c-bb40-b589d4273a8a",
-        object_key="f4d1b531-ccde-4926-a9fc-ff700e5ba4eb.kml",
-        format_file="kml",
+        has_color=False,
         is_zipped=False,
-        table_name="miko_kml",
-        additional_config=None,
+        is_terrain=False,
+        object_key="0165a908-0de6-439f-ba80-783b634f889e.kml",
+        table_name="styled_kml",
+        format_file="kml",
+        raster_alias=None,
+        three_d_alias=None,
+        additional_config=None
     )
     # Above invocation and top most import is necessary for actors auto registration, don't remove or comment it
 

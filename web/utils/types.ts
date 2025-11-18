@@ -42,7 +42,7 @@ export type SymbolStyles = {
     | "bottom-left"
     | "bottom-right";
   layout_icon_ignore_placement?: boolean;
-  layout_icon_image?: { id: string; title: string };
+  layout_icon_image?: string;
   layout_icon_keep_upright?: boolean;
   layout_icon_offset?: number[];
   layout_icon_optional?: boolean;
@@ -122,11 +122,6 @@ export type SymbolStyles = {
   paint_text_translate_anchor?: "map" | "viewport";
 };
 
-export interface SymbolStylesAdjusted extends SymbolStyles {
-  icon_image_title?: string;
-  icon_image_id?: string;
-}
-
 export interface SymbolStylesConfig extends SymbolStyles {
   id: string;
   name: string;
@@ -180,7 +175,7 @@ export type VectorTiles = {
   source: "vector_tiles";
   bounds: GeoJSON.Polygon;
   category?: { category_name?: string };
-  layer_style: CircleStyles | FillStyles | LineStyles | SymbolStylesAdjusted;
+  layer_style: CircleStyles | FillStyles | LineStyles;
   geometry_type: string;
   layer_alias?: string;
   layer_id: string;
@@ -290,6 +285,40 @@ export type ExternalTilesConfig = {
   category?: Category;
 };
 
+export type ExternalVector = {
+  source: "external_vector";
+  layer_id: string;
+  layer_alias: string;
+  geometry_type: string;
+  preview?: string;
+  description?: string;
+  category?: Category;
+  click_popup_columns?: string[];
+  hover_popup_columns?: string[];
+  image_columns?: string[];
+  listed: boolean;
+  active: boolean;
+  layer_style: CircleStyles | FillStyles | LineStyles;
+  bounds: GeoJSON.Polygon;
+};
+
+export type ExternalVectorConfig = {
+  layer_id: string;
+  layer_alias: string;
+  preview?: string;
+  description?: string;
+  category?: Category;
+  click_popup_columns?: string[];
+  hover_popup_columns?: string[];
+  image_columns?: string[];
+  listed: boolean;
+  active: boolean;
+  circle_style?: CircleStylesConfig;
+  symbol_style?: SymbolStylesConfig;
+  fill_style?: FillStylesConfig;
+  line_style?: LineStylesConfig;
+};
+
 export type ThreeDTiles = {
   source: "three_d_tiles";
   opacity: number;
@@ -325,6 +354,7 @@ export type LayerConfigLists = (
   | RasterTilesConfig
   | ThreeDTilesConfig
   | ExternalTilesConfig
+  | ExternalVectorConfig
 )[];
 
 export type LoadedGeoJson = {
@@ -348,7 +378,8 @@ export type LayerLists =
   | RasterTiles
   | ThreeDTiles
   | ExternalTiles
-  | LoadedGeoJson;
+  | LoadedGeoJson
+  | ExternalVector;
 
 export type LayerGroupedByCategory = {
   label: string;

@@ -45,7 +45,7 @@ const addLocation = (event: MapLayerTouchEvent) => {
       title: "Map is not ready",
       description: "Please try again in a while",
       icon: "i-heroicons-information-circle",
-      timeout: 1500,
+      duration: 1500,
     });
   }
 };
@@ -153,11 +153,23 @@ const {
   isFetching: isHeaderFetching,
   isError: isHeaderError,
 } = useQuery({
-  queryKey: [`/panel/vector-tiles-attribute-table-header/`, selectedLayer],
-  queryFn: ({ queryKey }) =>
-    $fetch<{
-      data: HeaderData[];
-    }>(queryKey[0] + queryKey[1]!).then((r) => r.data),
+  queryKey: ["/panel/vector-tiles-attribute-table-header/", selectedLayer],
+  queryFn: async ({ queryKey }) => {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+
+    if (authStore.accessToken) {
+      headers["Authorization"] = `Bearer ${authStore.accessToken}`;
+    }
+
+    const res = await $fetch<{ data: HeaderData[] }>(
+      queryKey[0] + queryKey[1]!,
+      { headers }
+    );
+
+    return res.data;
+  },
   enabled,
 });
 const columns = computed<
@@ -222,7 +234,7 @@ const handleIntersect = async () => {
       title: "Buffer analysis failed",
       description: "Something wrong, try again later",
       icon: "i-heroicons-information-circle",
-      timeout: 1500,
+      duration: 1500,
     });
   } finally {
     isAnalyze.value = false;
@@ -237,62 +249,54 @@ const handleIntersect = async () => {
       to add a location to points to be buffered.
     </p>
     <div class="text-xs text-grey-400">{{ points.length }} points targeted</div>
-    <UDivider
-      :ui="{ label: 'text-2xs text-grey-400' }"
+    <USeparator
+      color="gray"
       label="Buffer"
-      size="2xs"
+      size="xs"
+      :ui="{ container: 'text-grey-400', label: 'text-xs' }"
     />
-    <div class="grid grid-cols-3 gap-1">
-      <UInput
-        v-model="digit"
-        color="gray"
-        :ui="{ rounded: 'rounded-xxs' }"
-        size="2xs"
-        type="number"
-      >
-      </UInput>
+    <div class="grid grid-cols-3 gap-1 items-center">
+      <UInput v-model="digit" color="gray" size="xs" type="number"> </UInput>
       <USelect
         v-model="unit"
-        :options="units"
-        color="gray"
-        :ui="{ rounded: 'rounded-xxs' }"
-        size="2xs"
+        :items="units"
+        variant="subtle"
+        color="primary"
+        size="xs"
+        class="h-6"
       />
-      <UInput
-        v-model="colour"
-        color="gray"
-        :ui="{ rounded: 'rounded-xxs' }"
-        size="2xs"
-        type="color"
-      >
-      </UInput>
+      <UInput v-model="colour" color="gray" size="xs" type="color"> </UInput>
     </div>
-    <UDivider
-      :ui="{ label: 'text-2xs text-grey-400' }"
+    <USeparator
+      color="gray"
       label="Intersection"
-      size="2xs"
+      size="xs"
+      :ui="{ container: 'text-grey-400', label: 'text-xs' }"
     />
     <div class="grid grid-cols-3 gap-1">
       <USelect
         v-model="selectedLayer"
-        :options="activeLayers"
-        color="gray"
-        :ui="{ rounded: 'rounded-xxs' }"
-        size="2xs"
+        :items="activeLayers"
+        color="primary"
+        size="xs"
+        variant="subtle"
+        class="h-6"
       /><USelect
         v-model="selectedType"
-        :options="['simple', 'categorical']"
-        color="gray"
-        :ui="{ rounded: 'rounded-xxs' }"
-        size="2xs"
+        :items="['simple', 'categorical']"
+        color="primary"
+        size="xs"
+        variant="subtle"
+        class="h-6"
       /><USelect
         :disabled="selectedType === 'simple'"
         v-model="selectedColumn"
-        :options="columns"
-        option-attribute="name"
-        color="gray"
-        :ui="{ rounded: 'rounded-xxs' }"
-        size="2xs"
+        :items="columns"
+        labelKey="name"
+        color="primary"
+        size="xs"
+        variant="subtle"
+        class="h-6"
       />
     </div>
   </div>
@@ -301,15 +305,13 @@ const handleIntersect = async () => {
       @click="handleBuffer"
       color="brand"
       variant="outline"
-      :ui="{ rounded: 'rounded-[4px]' }"
-      class="w-full justify-center text-sm"
+      class="w-full justify-center text-sm rounded-sm"
       >Show Buffer</UButton
     >
     <UButton
       @click="handleIntersect"
       color="brand"
-      :ui="{ rounded: 'rounded-[4px]' }"
-      class="w-full justify-center text-sm"
+      class="w-full justify-center text-sm rounded-sm"
       :loading="isAnalyze"
       >Do Intersect</UButton
     >

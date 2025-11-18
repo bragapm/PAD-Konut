@@ -21,7 +21,7 @@ export async function up(knex) {
     paint_icon_halo_color varchar(255) NULL DEFAULT 'rgba(0, 0, 0, 0)',
     paint_icon_halo_width float4 NULL DEFAULT 0,
     layout_icon_ignore_placement bool NULL DEFAULT false,
-    layout_icon_image uuid NULL REFERENCES directus_files (id) ON DELETE SET NULL,
+    layout_icon_image text NULL,
     layout_icon_keep_upright bool NULL DEFAULT false,
     layout_icon_offset varchar(255) NULL DEFAULT '[0,0]',
     paint_icon_opacity text NULL DEFAULT '1'::character varying,
@@ -96,7 +96,7 @@ export async function up(knex) {
 
     ('symbol', 'layout_icon_ignore_placement', NULL, 'boolean', NULL, false, false, 8, '[{"language":"en-US","translation":"Icon Ignore Placement"}]', false),
 
-    ('symbol', 'layout_icon_image', 'file', 'file-image', '{"folder":"${LAYER_ICONS_FOLDER_ID}"}', false, false, 9, '[{"language":"en-US","translation":"Icon Image"}]', false),
+    ('symbol', 'layout_icon_image', 'file', 'file', '{"folder":"${LAYER_ICONS_FOLDER_ID}"}', false, false, 9, '[{"language":"en-US","translation":"Icon Image"}]', false),
 
     ('symbol', 'layout_icon_keep_upright', NULL, 'boolean', NULL, false, false, 10, '[{"language":"en-US","translation":"Icon Keep Upright"}]', false),
 

@@ -17,7 +17,7 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 pool = psycopg2.pool.ThreadedConnectionPool(
-    8, 8, dsn=os.environ.get("DB_CONNECTION_STRING")
+    1, 8, dsn=os.environ.get("DB_CONNECTION_STRING")
 )
 dramatiq.set_broker(
     dramatiq_pg.PostgresBroker(pool=pool, schema="public", table="geoprocessing_queue")

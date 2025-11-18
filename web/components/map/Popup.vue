@@ -16,6 +16,8 @@ const mapRefStore = useMapRef();
 const featureStore = useFeature();
 const { map } = storeToRefs(mapRefStore);
 const mapLayerStore = useMapLayer();
+const mapStore = useMap();
+const { cursorMode } = storeToRefs(mapStore);
 
 // Slider Logic
 const sliderContainer = ref<HTMLElement | null>(null);
@@ -50,10 +52,11 @@ export type PopupItem = {
   layerType: string;
   tableName: string;
   rowId: string | number;
-  clickPopupColumns: string[] | null;
-  imageColumns: string[] | null;
-  featureDetailColumns: string[] | null;
-  geometry: GeoJSON.Geometry;
+  data?: any;
+  clickPopupColumns?: string[] | null;
+  imageColumns?: string[] | null;
+  featureDetailColumns?: string[] | null;
+  geometry?: GeoJSON.Geometry;
 };
 
 const contentRef = ref<HTMLDivElement>();
@@ -63,15 +66,16 @@ const features = ref<any[]>([]);
 const isFetching = ref(false);
 const featureIndex = ref(0);
 
-watchEffect(() => {
-  if (!map.value) return;
-  map.value.on("click", (e: MapMouseEvent & Object) => {
+watchEffect((onInvalidate) => {
+  const clickEvent = (e: MapMouseEvent & Object) => {
     // The 'point' to query for features
     const point = [e.point.x, e.point.y];
     const filterLayers = mapLayerStore.groupedActiveLayers
       ?.map(({ layerLists }) => layerLists)
       .flat()
-      .filter((e) => Boolean(e.click_popup_columns));
+      .filter((e) =>
+        Boolean((e as VectorTiles | ExternalVector).click_popup_columns)
+      );
 
     // Query all the rendered features at the clicked point
     // across all layers using queryRenderedFeatures
@@ -83,15 +87,27 @@ watchEffect(() => {
       const foundLayer = filterLayers?.find(
         (layer) => layer.layer_id === feature.layer.id
       )!;
-      return {
-        layerId: feature.layer.id,
-        layerType: feature.layer.type,
-        tableName: feature.sourceLayer,
-        rowId: feature.id,
-        clickPopupColumns: foundLayer.click_popup_columns,
-        featureDetailColumns: foundLayer.feature_detail_columns,
-        imageColumns: foundLayer.image_columns ?? [],
-      };
+      if (foundLayer.source === "external_vector") {
+        return {
+          layerId: feature.layer.id,
+          layerType: feature.layer.type,
+          tableName: (foundLayer as ExternalVector).layer_alias,
+          rowId: feature.id,
+          data: { ...feature.properties, geom: feature.geometry },
+          clickPopupColumns: (foundLayer as ExternalVector).click_popup_columns,
+        };
+      } else {
+        return {
+          layerId: feature.layer.id,
+          layerType: feature.layer.type,
+          tableName: feature.sourceLayer,
+          rowId: feature.id,
+          clickPopupColumns: (foundLayer as VectorTiles).click_popup_columns,
+          featureDetailColumns: (foundLayer as VectorTiles)
+            .feature_detail_columns,
+          imageColumns: (foundLayer as VectorTiles).image_columns ?? [],
+        };
+      }
     });
 
     popupItems.value = featureList as PopupItem[];
@@ -116,6 +132,18 @@ watchEffect(() => {
       );
       slider?.moveToIdx(0);
     }
+  };
+  if (!map.value) return;
+  if (cursorMode.value === "default") {
+    map.value.on("click", clickEvent);
+  }
+
+  onInvalidate(() => {
+    if (map.value) {
+      if (cursorMode.value === "select") {
+        map.value.off("click", clickEvent);
+      }
+    }
   });
 });
 
@@ -126,6 +154,8 @@ onUnmounted(() => {
 
 watchEffect(async () => {
   if (popupItems.value?.length) {
+    isFetching.value = true;
+    let popupDataLists = [];
     const fetchFeature = async (popupItem: PopupItem) => {
       try {
         const querystring = new URLSearchParams({
@@ -143,15 +173,23 @@ watchEffect(async () => {
         return {};
       }
     };
-    isFetching.value = true;
-    const data = await Promise.all(
-      popupItems.value.map((item) => fetchFeature(item))
-    );
+    for (const popupItem of popupItems.value) {
+      if (popupItem.data) {
+        popupDataLists.push(popupItem.data);
+      } else {
+        const resData = await fetchFeature(popupItem);
+        popupDataLists.push(resData);
+      }
+    }
     isFetching.value = false;
-    features.value = data;
+    features.value = popupDataLists;
     featureIndex.value = 0;
     slider?.update();
-    showHighlightLayer(map.value!, data as any[], popupItems.value[0].layerId);
+    showHighlightLayer(
+      map.value!,
+      popupDataLists as any[],
+      popupItems.value[0].layerId
+    );
   }
 });
 
@@ -208,7 +246,7 @@ const removePopup = () => {
   <div class="hidden">
     <div ref="contentRef">
       <section
-        class="flex w-72 flex-col items-center justify-center gap-3 p-3 overflow-hidden bg-grey-800 rounded-xs text-grey-100"
+        class="flex w-72 flex-col items-center justify-center gap-3 p-3 overflow-hidden bg-grey-800 rounded-lg text-grey-100"
       >
         <header
           class="flex justify-between items-center w-full border-b pb-1 border-grey-700"
@@ -227,13 +265,14 @@ const removePopup = () => {
         </h4>
 
         <div
+          v-if="popupItems[featureIndex]?.imageColumns?.length"
           :class="`relative w-full ${
             popupItems[featureIndex]?.imageColumns?.length ? 'h-40' : 'h-0'
           }`"
         >
           <div
             ref="sliderContainer"
-            class="keen-slider h-full w-full rounded-xs"
+            class="keen-slider h-full w-full rounded-lg"
           >
             <img
               class="keen-slider__slide object-cover min-w-full max-w-full"
@@ -241,10 +280,20 @@ const removePopup = () => {
                 .filter((k) =>
                   popupItems[featureIndex]?.imageColumns?.includes(k)
                 )
-                .map((k) =>
-                  features[featureIndex][k].includes(',')
-                    ? features[featureIndex][k].split(',')
-                    : features[featureIndex][k]
+                .map(
+                  (k) => {
+                    const value = features[featureIndex][k];
+                    if (!value)
+                      return [
+                        '/panel/assets/40060caa-4a46-4b2d-a06a-bb46b8bbe0e3',
+                      ];
+                    return value.includes(',')
+                      ? value.split(',').map((el:string) => '/panel/assets/' + el)
+                      : ['/panel/assets/' + value];
+                  }
+                  // features[featureIndex][k].includes(',')
+                  //   ? features[featureIndex][k].split(',')
+                  //   : features[featureIndex][k]
                 )
                 .flat()"
               :key="idx"
@@ -259,7 +308,7 @@ const removePopup = () => {
               ).length
             "
             @click="prevImage"
-            class="absolute left-2 top-1/2 -translate-y-1/2 flex justify-center items-center border rounded-xs bg-black opacity-40"
+            class="absolute left-2 top-1/2 -translate-y-1/2 flex justify-center items-center border rounded-lg bg-black opacity-40"
           >
             <IcArrowReg
               :fontControlled="false"
@@ -274,7 +323,7 @@ const removePopup = () => {
               ).length
             "
             @click="nextImage"
-            class="absolute right-2 top-1/2 -translate-y-1/2 flex justify-center items-center border rounded-xs bg-black opacity-40"
+            class="absolute right-2 top-1/2 -translate-y-1/2 flex justify-center items-center border rounded-lg bg-black opacity-40"
           >
             <IcArrowReg
               :fontControlled="false"
@@ -304,8 +353,8 @@ const removePopup = () => {
               :key="idx"
               class="flex space-x-2 animate-pulse"
             >
-              <div class="w-1/4 h-4 bg-grey-700 rounded-xs"></div>
-              <div class="grow h-4 bg-grey-700 rounded-xs"></div>
+              <div class="w-1/4 h-4 bg-grey-700 rounded-lg"></div>
+              <div class="grow h-4 bg-grey-700 rounded-lg"></div>
             </div>
           </template>
           <template v-else>
@@ -326,7 +375,7 @@ const removePopup = () => {
           <button
             :disabled="popupItems?.length < 2 || featureIndex === 0"
             @click="prevFeature"
-            class="rounded-xs border w-9 h-9 flex justify-center items-center -rotate-90 text-grey-400 border-grey-400 disabled:text-grey-600 disabled:border-grey-600"
+            class="rounded-lg border w-9 h-9 flex justify-center items-center -rotate-90 text-grey-400 border-grey-400 disabled:text-grey-600 disabled:border-grey-600"
           >
             <IcArrowReg :fontControlled="false" />
           </button>
@@ -337,7 +386,7 @@ const removePopup = () => {
                 featureStore.setRightSidebar('feature');
                 popupRef!.remove()             }
             "
-            class="rounded-xs grow h-9 bg-brand-600 text-sm font-medium"
+            class="rounded-lg grow h-9 bg-brand-600 text-sm font-medium"
           >
             More Detail
           </button>
@@ -346,7 +395,7 @@ const removePopup = () => {
               popupItems?.length < 2 || featureIndex === features.length - 1
             "
             @click="nextFeature"
-            class="rounded-xs border w-9 h-9 flex justify-center items-center rotate-90 text-grey-400 border-grey-400 disabled:text-grey-600 disabled:border-grey-600"
+            class="rounded-lg border w-9 h-9 flex justify-center items-center rotate-90 text-grey-400 border-grey-400 disabled:text-grey-600 disabled:border-grey-600"
           >
             <IcArrowReg :fontControlled="false" />
           </button>

@@ -1,6 +1,4 @@
 <script lang="ts" setup>
-import { Menu, MenuButton, MenuItems, MenuItem } from "@headlessui/vue";
-import { useFloating, offset, flip } from "@floating-ui/vue";
 import IcArrowReg from "~/assets/icons/ic-arrow-reg.svg";
 
 defineProps<{
@@ -10,22 +8,23 @@ defineProps<{
 }>();
 const emit = defineEmits(["update:modelValue"]);
 
-const reference = ref(null);
-const floating = ref(null);
-const { floatingStyles } = useFloating(reference, floating, {
-  placement: "bottom-start",
-  middleware: [offset(0), flip()],
-});
+const open = ref(false);
 </script>
 
 <template>
-  <Menu as="div" class="relative w-full flex items-center">
-    <MenuButton
+  <UPopover
+    v-model:open="open"
+    :content="{ align: 'start' }"
+    :ui="{
+      content:
+        'p-2 ring ring-grey-500 rounded-sm bg-grey-900 flex flex-col gap-2 w-48',
+    }"
+  >
+    <button
       :disabled="disabled"
-      ref="reference"
-      class="w-full h-6 flex items-center gap-2 focus:outline-none p-2 border border-grey-500 rounded-xxs"
+      class="w-full h-[26px] flex items-center gap-2 focus:outline-none p-2 border border-grey-600 bg-grey-700 rounded-sm"
     >
-      <div class="w-full h-3 rounded-xxs flex gap-2 items-center">
+      <div class="w-full h-3 rounded-sm flex gap-2 items-center">
         <div
           :class="[
             modelValue ? 'border-dashed' : 'border-solid',
@@ -38,49 +37,41 @@ const { floatingStyles } = useFloating(reference, floating, {
       </div>
       <IcArrowReg
         :fontControlled="false"
-        class="w-4 h-4 rotate-180 text-grey-50"
+        class="w-4 h-4 rotate-180 text-grey-400"
       />
-    </MenuButton>
+    </button>
 
-    <teleport to="body">
-      <MenuItems
-        ref="floating"
-        :style="floatingStyles"
-        class="absolute z-10 p-2 border border-grey-500 rounded-xxs bg-grey-900 flex flex-col gap-2 w-48"
+    <template #content>
+      <UButton
+        :disabled="modelValue === null"
+        @click="
+          () => {
+            updateLineDash(null);
+            emit('update:modelValue', null);
+            open = false;
+          }
+        "
+        size="xs"
+        color="brand"
+        variant="ghost"
+        :class="[modelValue === null && 'bg-brand-950', 'rounded-sm']"
+        >Solid</UButton
       >
-        <MenuItem :disabled="modelValue === null">
-          <UButton
-            @click="
-              () => {
-                updateLineDash(null);
-                emit('update:modelValue', null);
-              }
-            "
-            :ui="{ rounded: 'rounded-[4px]' }"
-            size="2xs"
-            color="brand"
-            variant="ghost"
-            :class="modelValue === null && 'bg-brand-950'"
-            >Solid</UButton
-          >
-        </MenuItem>
-        <MenuItem :disabled="modelValue !== null">
-          <UButton
-            @click="
-              () => {
-                updateLineDash([5, 1]);
-                emit('update:modelValue', [5, 1]);
-              }
-            "
-            :ui="{ rounded: 'rounded-[4px]' }"
-            size="2xs"
-            color="brand"
-            variant="ghost"
-            :class="modelValue !== null && 'bg-brand-950'"
-            >Dash</UButton
-          >
-        </MenuItem>
-      </MenuItems>
-    </teleport>
-  </Menu>
+      <UButton
+        :disabled="modelValue !== null"
+        @click="
+          () => {
+            updateLineDash([5, 1]);
+            emit('update:modelValue', [5, 1]);
+            open = false;
+          }
+        "
+        size="xs"
+        color="brand"
+        variant="ghost"
+        :class="[modelValue !== null && 'bg-brand-950', 'rounded-sm']"
+        >Dash</UButton
+      >
+    </template>
+  </UPopover>
 </template>

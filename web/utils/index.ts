@@ -1,10 +1,16 @@
 import type { GeoJSONSource, Map } from "maplibre-gl";
-import type { MapData, GeneralSettings, AuthPayload } from "./types";
+import type { MapData, GeneralSettings } from "./types";
 import type { Raw } from "vue";
-import tailwindConfig from "~/tailwind.config";
 
-export const getBrandColor = (colorStep: string): string =>
-  (tailwindConfig.theme?.colors as any).brand[colorStep];
+export const getBrandColor = (colorStep: string): string => {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  return getComputedStyle(document.documentElement)
+    .getPropertyValue(`--color-brand-${colorStep}`)
+    .trim();
+};
 
 export const useMapData = async () => {
   const { status, data } = await useFetch<MapData>("/panel/items/map/eng", {
@@ -15,10 +21,17 @@ export const useMapData = async () => {
 
 export const useSharedMap = async () => {
   const route = useRoute();
+  const authStore = useAuth();
   if (route.query.share_id) {
     const { data } = await useFetch<{ data: { map_state: any } }>(
       `/panel/items/shared_map/${route.query.share_id}`,
-      { key: "sharedMap" }
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authStore.accessToken}`, // 👈 put your token here
+        },
+      }
     );
     return data;
   }
@@ -37,7 +50,7 @@ export const moveHighlightLayer = (map: Map, layerName: string) => {
   let targetIndex = layers.findIndex((layer) => layer.id === layerName);
   let layerAboveTarget;
   if (targetIndex !== -1 && targetIndex < layers.length - 1) {
-    layerAboveTarget = layers[targetIndex + 1].id;
+    layerAboveTarget = layers[targetIndex + 1]?.id;
   }
 
   map.moveLayer("highlight-point-pulsing", layerAboveTarget);
@@ -352,3 +365,12 @@ export const emptyFeatureCollection: GeoJSON.FeatureCollection = {
   type: "FeatureCollection",
   features: [],
 };
+
+export function formatDate(dateString: string) {
+  const date = new Date(dateString);
+  return new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    day: "2-digit",
+    year: "numeric",
+  }).format(date);
+}

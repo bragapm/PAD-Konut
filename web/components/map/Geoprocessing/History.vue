@@ -69,22 +69,13 @@ watchEffect(() => {
       v-for="i of [1, 2, 3]"
       :key="i"
     >
-      <USkeleton
-        :ui="{ background: 'bg-grey-800', rounded: 'rounded-xxs' }"
-        class="h-10 w-full"
-      />
+      <USkeleton class="h-10 w-full" />
       <div
-        class="bg-transparent border border-grey-700 rounded-xxs p-2 space-y-2"
+        class="bg-transparent border border-grey-700 rounded-sm p-2 space-y-2"
       >
         <div v-for="i of [1, 2, 3, 4]" :key="i" class="space-y-1">
-          <USkeleton
-            :ui="{ background: 'bg-grey-800', rounded: 'rounded-xxs' }"
-            class="h-3 w-1/2"
-          />
-          <USkeleton
-            :ui="{ background: 'bg-grey-800', rounded: 'rounded-xxs' }"
-            class="h-3 w-2/3"
-          />
+          <USkeleton class="h-3 w-1/2" />
+          <USkeleton class="h-3 w-2/3" />
         </div>
       </div>
     </div>

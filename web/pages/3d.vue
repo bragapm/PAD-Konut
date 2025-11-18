@@ -228,18 +228,17 @@ watchEffect((onCleanup) => {
     <canvas id="myCanvas" class="w-full h-full"></canvas>
     <canvas
       id="myNavCubeCanvas"
-      class="absolute right-6 bottom-6 z-10 bg-gray-200 rounded-xs"
+      class="absolute right-6 bottom-6 z-10 bg-gray-200 rounded-lg"
     ></canvas>
     <div class="z-10">
       <div
         id="treeViewContainer"
-        class="absolute top-28 left-6 h-96 w-72 overflow-y-auto bg-gray-800 text-white rounded-xs p-3"
+        class="absolute top-28 left-6 h-96 w-72 overflow-y-auto bg-gray-800 text-white rounded-lg p-3"
       />
 
       <UButtonGroup
         orientation="horizontal"
-        class="absolute bottom-6 left-6 divide-x"
-        :ui="{ rounded: 'rounded-sm' }"
+        class="absolute bottom-6 left-6 divide-x rounded-xl"
         ><UButton
           icon="i-heroicons-scissors-20-solid"
           label="Slice"

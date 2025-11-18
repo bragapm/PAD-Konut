@@ -25,11 +25,12 @@ const threeDRenderedLayers = computed(() => {
     <MapLayerVector
       v-if="
         layerItem.source === 'vector_tiles' ||
-        layerItem.source === 'loaded_geojson'
+        layerItem.source === 'loaded_geojson' ||
+        layerItem.source === 'external_vector'
       "
       :renderedLayers="renderedLayers"
       :order="index"
-      :item="(layerItem as VectorTiles | LoadedGeoJson)"
+      :item="(layerItem as VectorTiles | LoadedGeoJson | ExternalVector)"
     />
     <MapLayerRasterTerrain
       v-else-if="layerItem.source === 'raster_tiles' && layerItem.terrain_rgb"

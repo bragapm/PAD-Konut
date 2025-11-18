@@ -65,18 +65,9 @@ const {
       </span>
     </div>
     <div v-else class="flex flex-col gap-1">
-      <USkeleton
-        :ui="{ background: 'bg-grey-800', rounded: 'rounded-xxs' }"
-        class="h-5 w-32 mb-1"
-      />
-      <USkeleton
-        :ui="{ background: 'bg-grey-800', rounded: 'rounded-xxs' }"
-        class="h-3 w-52"
-      />
-      <USkeleton
-        :ui="{ background: 'bg-grey-800', rounded: 'rounded-xxs' }"
-        class="h-3 w-96"
-      />
+      <USkeleton class="h-5 w-32 mb-1" />
+      <USkeleton class="h-3 w-52" />
+      <USkeleton class="h-3 w-96" />
     </div>
   </div>
 </template>

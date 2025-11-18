@@ -22,12 +22,9 @@ const { data: categoriesData, status } = useFetch<{
 });
 
 watchEffect(() => {
-  if (
-    !selectedCategory.value &&
-    categoriesData.value &&
-    categoriesData.value.data.length > 0
-  ) {
-    setCategory(categoriesData.value.data[0].category_id);
+  const list = categoriesData.value?.data;
+  if (!selectedCategory.value && list?.length) {
+    if (list[0]) setCategory(list[0].category_id);
   }
 });
 </script>
@@ -42,12 +39,7 @@ watchEffect(() => {
         </p>
       </span>
       <div v-if="!categoriesData && status === 'pending'" class="space-y-2">
-        <USkeleton
-          v-for="i of [0, 1, 2, 3, 4]"
-          :key="i"
-          :ui="{ rounded: 'rounded-xxs', background: 'bg-grey-800' }"
-          class="w-full h-6"
-        />
+        <USkeleton v-for="i of [0, 1, 2, 3, 4]" :key="i" class="w-full h-6" />
       </div>
       <MapManagementCatalogueCategory
         v-if="categoriesData?.data && categoriesData.data.length > 0"
@@ -56,10 +48,9 @@ watchEffect(() => {
         :item="category"
       />
       <UButton
-        :ui="{ rounded: 'rounded-xxs' }"
         label="Other"
         :variant="selectedCategory === staticKey.other ? 'solid' : 'ghost'"
-        color="grey"
+        color="gray"
         @click="
           () => {
             setCategory(staticKey.other);
@@ -77,16 +68,18 @@ watchEffect(() => {
         </p>
       </span>
       <UButton
-        :ui="{ rounded: 'rounded-xxs' }"
         label="Loaded Data"
-        :variant="selectedCategory === staticKey.loadedData ? 'solid' : 'ghost'"
-        color="grey"
+        variant="ghost"
+        color="gray"
         @click="
           () => {
             setCategory(staticKey.loadedData);
           }
         "
-        class="w-full text-xs text-left flex justify-between"
+        :class="[
+          'w-full text-xs text-left flex justify-between rounded-sm',
+          selectedCategory === staticKey.loadedData && 'bg-brand-950',
+        ]"
       />
     </div>
   </div>

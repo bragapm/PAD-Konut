@@ -7,13 +7,6 @@ import KeenSlider, {
 import IcArrowReg from "~/assets/icons/ic-arrow-reg.svg";
 import IcCross from "~/assets/icons/ic-cross.svg";
 import IcRectangleList from "~/assets/icons/ic-rectangle-list.svg";
-import {
-  TransitionRoot,
-  TransitionChild,
-  Dialog,
-  DialogPanel,
-  DialogTitle,
-} from "@headlessui/vue";
 import type { GeoJSONSource } from "maplibre-gl";
 import { useQuery } from "@tanstack/vue-query";
 
@@ -40,8 +33,8 @@ const ResizePlugin: KeenSliderPlugin = (slider) => {
 const current = ref<number>(0);
 const sliderContainer = ref<HTMLElement | null>(null);
 let slider: KeenSliderInstance | null = null;
-let nextImage: (e: MouseEvent) => void;
-let prevImage: (e: MouseEvent) => void;
+let nextImage: () => void;
+let prevImage: () => void;
 
 watchEffect((onInvalidate) => {
   if (sliderContainer.value) {
@@ -56,12 +49,12 @@ watchEffect((onInvalidate) => {
       },
       [ResizePlugin]
     );
-    nextImage = (e: MouseEvent) => {
+    nextImage = () => {
       slider?.update();
       slider?.next();
     };
 
-    prevImage = (e: MouseEvent) => {
+    prevImage = () => {
       slider?.update();
       slider?.prev();
     };
@@ -74,18 +67,17 @@ watchEffect((onInvalidate) => {
 
 const isOpen = ref(false);
 
-function closeModal() {
-  isOpen.value = false;
-}
-function openModal(idx: number) {
+const openModal = (idx: number) => {
   isOpen.value = true;
-  if (idx)
+  if (idx) {
     setTimeout(() => {
       slider?.update();
       slider?.moveToIdx(idx);
     }, 500);
-  else current.value = 0;
-}
+  } else {
+    current.value = 0;
+  }
+};
 
 const featureStore = useFeature();
 const { feature } = storeToRefs(featureStore);
@@ -152,15 +144,15 @@ const clearSelection = () => {
       v-else-if="!detailData && isDetailFetching"
       class="h-full animate-pulse space-y-3"
     >
-      <div class="w-full h-8 bg-grey-700 rounded-xs"></div>
-      <div class="w-full h-8 bg-grey-700 rounded-xs"></div>
-      <div class="w-full h-44 bg-grey-700 rounded-xs"></div>
-      <div class="w-full h-4 bg-grey-700 rounded-xs"></div>
-      <div class="w-full h-4 bg-grey-700 rounded-xs"></div>
-      <div class="w-full h-4 bg-grey-700 rounded-xs"></div>
-      <div class="w-full h-4 bg-grey-700 rounded-xs"></div>
-      <div class="w-full h-4 bg-grey-700 rounded-xs"></div>
-      <div class="w-full h-4 bg-grey-700 rounded-xs"></div>
+      <div class="w-full h-8 bg-grey-700 rounded-lg"></div>
+      <div class="w-full h-8 bg-grey-700 rounded-lg"></div>
+      <div class="w-full h-44 bg-grey-700 rounded-lg"></div>
+      <div class="w-full h-4 bg-grey-700 rounded-lg"></div>
+      <div class="w-full h-4 bg-grey-700 rounded-lg"></div>
+      <div class="w-full h-4 bg-grey-700 rounded-lg"></div>
+      <div class="w-full h-4 bg-grey-700 rounded-lg"></div>
+      <div class="w-full h-4 bg-grey-700 rounded-lg"></div>
+      <div class="w-full h-4 bg-grey-700 rounded-lg"></div>
     </div>
 
     <div
@@ -198,7 +190,7 @@ const clearSelection = () => {
           <img
             role="button"
             @click="() => openModal(idx)"
-            class="rounded-[4px] w-16 h-16 object-cover"
+            class="rounded-sm w-16 h-16 object-cover"
             v-for="(source, idx) of detailData.gallery
               .map((src, idx) =>
                 idx > 3 ? [] : src.includes(',') ? src.split(',') : src
@@ -214,7 +206,7 @@ const clearSelection = () => {
                 .flat().length > 4
             "
             @click="() => openModal(4)"
-            class="absolute top-0 right-1 w-16 h-16 bg-grey-900 bg-opacity-30 flex justify-center items-center text-white text-2xs"
+            class="absolute top-0 right-1 w-16 h-16 bg-grey-900/30 flex justify-center items-center text-white text-2xs"
           >
             More
           </button>
@@ -235,114 +227,91 @@ const clearSelection = () => {
   </div>
   <UButton
     v-if="featureStore.feature && detailData"
-    :ui="{ rounded: 'rounded-xxs' }"
     label="Clear Feature Selection"
     variant="outline"
     color="brand"
-    class="m-3"
+    class="m-3 rounded-xl"
     @click="clearSelection"
   >
   </UButton>
 
-  <TransitionRoot v-if="detailData" appear :show="isOpen" as="template">
-    <Dialog as="div" @close="closeModal" class="relative z-10">
-      <TransitionChild
-        as="template"
-        enter="duration-300 ease-out"
-        enter-from="opacity-0"
-        enter-to="opacity-100"
-        leave="duration-200 ease-in"
-        leave-from="opacity-100"
-        leave-to="opacity-0"
-      >
-        <div class="fixed inset-0 bg-black/25" />
-      </TransitionChild>
-
-      <div class="fixed inset-0 overflow-y-auto rounded-xs">
+  <UModal
+    v-if="detailData"
+    v-model:open="isOpen"
+    :ui="{ content: 'bg-grey-900 max-w-2xl' }"
+  >
+    <template #content>
+      <div class="p-3">
         <div
-          class="flex min-h-full items-center justify-center p-4 text-center rounded-xs"
+          class="text-base font-medium leading-6 flex justify-between items-center"
         >
-          <TransitionChild
-            as="template"
-            enter="duration-300 ease-out"
-            enter-from="opacity-0 scale-95"
-            enter-to="opacity-100 scale-100"
-            leave="duration-200 ease-in"
-            leave-from="opacity-100 scale-100"
-            leave-to="opacity-0 scale-95"
-          >
-            <DialogPanel
-              class="w-full max-w-2xl transform overflow-hidden rounded-xs bg-grey-900 p-3 text-left align-middle shadow-xl transition-all"
-              ><DialogTitle
-                class="text-base font-medium leading-6 flex justify-between items-center"
-              >
-                <h2 class="text-white">Image Gallery</h2>
-                <IcCross
-                  role="button"
-                  @click="closeModal"
-                  :fontControlled="false"
-                  class="w-3 h-3 rotate-180 text-grey-50"
-                />
-              </DialogTitle>
-              <div class="relative w-full my-3">
-                <div
-                  ref="sliderContainer"
-                  class="keen-slider h-full w-full rounded-xs"
-                >
-                  <img
-                    class="keen-slider__slide object-cover min-w-full max-w-full"
-                    v-for="(source, idx) of detailData.gallery
-                      .map((src) => (src.includes(',') ? src.split(',') : src))
-                      .flat()"
-                    :key="idx"
-                    :src="source"
-                  />
-                </div>
-
-                <button
-                  v-if="detailData.gallery.length"
-                  @click="prevImage"
-                  class="absolute left-8 top-1/2 -translate-y-1/2 flex justify-center items-center border rounded-xs bg-black opacity-40"
-                >
-                  <IcArrowReg
-                    :fontControlled="false"
-                    class="w-5 h-5 m-1 -rotate-90 text-grey-50"
-                  />
-                </button>
-
-                <button
-                  v-if="detailData.gallery.length"
-                  @click="nextImage"
-                  class="absolute right-8 top-1/2 -translate-y-1/2 flex justify-center items-center border rounded-xs bg-black opacity-40"
-                >
-                  <IcArrowReg
-                    :fontControlled="false"
-                    class="w-5 h-5 m-1 rotate-90 text-grey-50"
-                  />
-                </button>
-              </div>
-              <ul class="flex space-x-1 overflow-x-scroll">
-                <img
-                  role="button"
-                  @click="() => slider?.moveToIdx(idx)"
-                  :class="`rounded-[4px] w-16 h-16 object-cover ${
-                    idx === current && 'border-4 border-brand-500'
-                  }`"
-                  v-for="(source, idx) of detailData.gallery
-                    .map((src, idx) =>
-                      idx > 3 ? [] : src.includes(',') ? src.split(',') : src
-                    )
-                    .flat()"
-                  :key="idx"
-                  :src="source"
-                />
-              </ul>
-            </DialogPanel>
-          </TransitionChild>
+          <h2 class="text-white">Image Gallery</h2>
+          <IcCross
+            role="button"
+            @click="isOpen = false"
+            :fontControlled="false"
+            class="w-3 h-3 rotate-180 text-grey-50"
+          />
         </div>
+        <div class="relative w-full my-3">
+          <div
+            ref="sliderContainer"
+            class="keen-slider h-full w-full rounded-lg"
+          >
+            <img
+              class="keen-slider__slide object-cover min-w-full max-w-full"
+              v-for="(source, idx) of detailData.gallery
+                .map((src) => (src.includes(',') ? src.split(',') : src))
+                .flat()"
+              :key="idx"
+              :src="source"
+              alt="Gallery image"
+            />
+          </div>
+
+          <button
+            v-if="detailData.gallery.length"
+            @click="prevImage"
+            class="absolute left-8 top-1/2 -translate-y-1/2 flex justify-center items-center border rounded-lg bg-black opacity-40"
+          >
+            <IcArrowReg
+              :fontControlled="false"
+              class="w-5 h-5 m-1 -rotate-90 text-grey-50"
+            />
+          </button>
+
+          <button
+            v-if="detailData.gallery.length"
+            @click="nextImage"
+            class="absolute right-8 top-1/2 -translate-y-1/2 flex justify-center items-center border rounded-lg bg-black opacity-40"
+          >
+            <IcArrowReg
+              :fontControlled="false"
+              class="w-5 h-5 m-1 rotate-90 text-grey-50"
+            />
+          </button>
+        </div>
+        <ul class="flex space-x-1 overflow-x-scroll">
+          <img
+            role="button"
+            @click="() => slider?.moveToIdx(idx)"
+            :class="[
+              'rounded-sm w-16 h-16 object-cover',
+              idx === current && 'border-4 border-brand-500'
+            ]"
+            v-for="(source, idx) of detailData.gallery
+              .map((src, idx) =>
+                idx > 3 ? [] : src.includes(',') ? src.split(',') : src
+              )
+              .flat()"
+            :key="idx"
+            :src="source"
+            alt="Thumbnail"
+          />
+        </ul>
       </div>
-    </Dialog>
-  </TransitionRoot>
+    </template>
+  </UModal>
 </template>
 
 <style>

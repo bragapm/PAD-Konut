@@ -1,5 +1,85 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+@plugin '@tailwindcss/typography';
+
 body {
   font-family: "Inter", sans-serif;
+}
+
+@theme default {
+  --ui-primary: var(--ui-color-brand-600);
+  --ui-gray: var(--ui-color-gray-700);
+  --ui-bg-elevated: var(--ui-color-gray-700);
+  --ui-text-dimmed: var(--ui-color-gray-400);
+  --ui-text-muted: var(--ui-color-gray-500);
+  --ui-text-highlighted: var(--ui-color-gray-200);
+}
+
+@theme static {
+  --color-white: #ffffff;
+  --color-black: #000000;
+
+  --color-brand-50: #fef9ef;
+  --color-brand-100: #fce6c5;
+  --color-brand-200: #face9b;
+  --color-brand-300: #f8b271;
+  --color-brand-400: #f59047;
+  --color-brand-500: #f36a1d;
+  --color-brand-600: #cd541b;
+  --color-brand-700: #a84118;
+  --color-brand-800: #842f15;
+  --color-brand-900: #663121;
+  --color-brand-950: #412820;
+
+  --color-grey-50: #f9f8f7;
+  --color-grey-100: #f4f3f1;
+  --color-grey-200: #e2e1df;
+  --color-grey-300: #c3c3bf;
+  --color-grey-400: #b4b4af;
+  --color-grey-500: #777674;
+  --color-grey-600: #4f4d4a;
+  --color-grey-700: #353332;
+  --color-grey-800: #232221;
+  --color-grey-900: #191919;
+  --color-grey-950: #161414;
+
+  --color-red-50: #fef4f0;
+  --color-red-100: #f9d5c9;
+  --color-red-200: #f5b6a2;
+  --color-red-300: #ef957c;
+  --color-red-400: #e97456;
+  --color-red-500: #e35131;
+  --color-red-600: #c4432c;
+  --color-red-700: #a63626;
+  --color-red-800: #882b20;
+  --color-red-900: #6b201a;
+  --color-red-950: #4d1613;
+
+  --color-green-50: #f2faf2;
+  --color-green-100: #cceed1;
+  --color-green-200: #a4e4b2;
+  --color-green-300: #7adc98;
+  --color-green-400: #4ed682;
+  --color-green-500: #20d372;
+  --color-green-600: #1cb966;
+  --color-green-700: #189e59;
+  --color-green-800: #14844b;
+  --color-green-900: #10693d;
+  --color-green-950: #0c4e2f;
+
+  --color-blue-50: #f2fcfc;
+  --color-blue-100: #cdf1f7;
+  --color-blue-200: #a6e2f5;
+  --color-blue-300: #7ccef6;
+  --color-blue-400: #4fb5f9;
+  --color-blue-500: #1f93ff;
+  --color-blue-600: #1b7edf;
+  --color-blue-700: #176abf;
+  --color-blue-800: #13569f;
+  --color-blue-900: #0f437f;
+  --color-blue-950: #0b315e;
+
+  --text-2xs: 10px;
 }
 
 .maplibregl-ctrl-top-right {
@@ -53,7 +133,7 @@ body {
 
 .geod-popup .maplibregl-popup-content {
   @apply p-0;
-  @apply rounded-md;
+  @apply rounded-2xl;
   animation: fadeIn 0.3s ease-out forwards; /* Apply the entrance animation */
 }
 
@@ -80,7 +160,7 @@ body {
 }
 /* Handle */
 ::-webkit-scrollbar-thumb {
-  @apply bg-grey-600 rounded-lg h-7;
+  @apply bg-grey-600 rounded-[20px] h-7;
 }
 
 /* Hide Arrows From Input Number */
@@ -94,4 +174,35 @@ input::-webkit-inner-spin-button {
 /* Firefox */
 input[type="number"] {
   -moz-appearance: textfield;
+}
+
+/* Remove autofill background highlight */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0px 1000px transparent inset !important;
+  -webkit-text-fill-color: #e2e1df;
+  transition: background-color 9999s ease-in-out 0s !important;
+}
+
+/* Typography Utility Classes */
+@utility text-m-xxs {
+  @apply text-grey-50 text-2xs font-medium leading-4;
+}
+
+@utility text-r-xxs {
+  @apply text-grey-50 text-2xs font-normal leading-4;
+}
+
+@utility text-r-xxs-muted {
+  @apply text-grey-400 text-2xs font-normal leading-4;
+}
+
+@utility text-m-xs {
+  @apply text-grey-50 text-xs font-medium leading-4;
+}
+
+@utility text-r-xs-muted {
+  @apply text-grey-400 text-2xs font-normal leading-4;
 }

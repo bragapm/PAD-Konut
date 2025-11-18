@@ -8,7 +8,7 @@ const uploadLayer = () => {
 
 <template>
   <div
-    class="flex flex-col justify-between gap-2 border border-grey-700 bg-grey-800 rounded-xs p-2"
+    class="flex flex-col justify-between gap-2 border border-grey-700 bg-grey-800 rounded-lg p-2"
   >
     <div class="flex flex-col flex-1 items-center justify-center py-8">
       <IcMapLayerB class="h-6 w-6 text-brand-500" :fontControlled="false" />
@@ -18,9 +18,8 @@ const uploadLayer = () => {
       </p>
     </div>
     <UButton
-      :ui="{ rounded: 'rounded-xxs' }"
       label="Upload Data"
-      class="w-full h-9 justify-between"
+      class="w-full h-9 justify-between rounded-xl"
       variant="outline"
       color="brand"
       @click="uploadLayer"

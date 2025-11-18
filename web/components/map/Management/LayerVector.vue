@@ -2,7 +2,6 @@
 import IcEye from "~/assets/icons/ic-eye.svg";
 import IcEyeCrossed from "~/assets/icons/ic-eye-crossed.svg";
 import IcMarkerStyle from "~/assets/icons/ic-marker-style.svg";
-import { TransitionRoot } from "@headlessui/vue";
 import type {
   LineStyles,
   FillStyles,
@@ -23,7 +22,7 @@ const props = defineProps<{
   order: number;
   groupOrder: number;
   filtered: boolean;
-  layerItem: VectorTiles | LoadedGeoJson;
+  layerItem: VectorTiles | LoadedGeoJson | ExternalVector;
 }>();
 
 const emit = defineEmits<{
@@ -37,6 +36,10 @@ const { map } = storeToRefs(store);
 
 const storeLayer = useMapLayer();
 const { handleVisibility } = storeLayer;
+
+const mapStore = useMap();
+const { cursorMode, selectedLayerId } = storeToRefs(mapStore);
+const { selectLayerId, selectLayerName } = mapStore;
 
 const groupIndex = computed(() => {
   if (storeLayer.groupedActiveLayers)
@@ -118,6 +121,7 @@ const toggleVisibility = () => {
       }
     "
     @dragover="(e) => e.preventDefault()"
+    class="relative"
   >
     <div
       :draggable="filtered ? false : true"
@@ -130,22 +134,46 @@ const toggleVisibility = () => {
         }
       "
       :class="[
-        isShowStyling
+        isShowStyling || layerItem.layer_id === selectedLayerId
           ? 'bg-grey-700'
           : 'bg-transparent hover:ring-1 hover:ring-grey-500',
         filtered ? 'cursor-pointer' : 'cursor-grab',
-        'rounded-xxs p-2 flex justify-between items-center gap-2 w-full transition-all duration-500 ease',
+        'rounded-sm p-2 flex justify-between items-center gap-2 w-full transition-all duration-500 ease',
       ]"
     >
-      <div class="w-8/12">
-        <p
-          :class="[
-            visibility === 'visible' ? 'text-grey-200' : 'text-grey-500',
-            'truncate',
-          ]"
+      <div
+        :disabled="cursorMode !== 'select'"
+        @click="
+          (e) => {
+            if (cursorMode === 'select') {
+              if (layerItem.source === 'vector_tiles') {
+                selectLayerId(layerItem.layer_id);
+                selectLayerName(layerItem.layer_name);
+              } else if (layerItem.source === 'external_vector') {
+                selectLayerId(layerItem.layer_id);
+                selectLayerName(layerItem.layer_id.split('_')[0]);
+              }
+            }
+          }
+        "
+        :class="[cursorMode === 'select' && 'cursor-pointer', 'w-full']"
+      >
+        <UTooltip
+          :text="layerItem.layer_alias"
+          :ui="{
+            content:
+              'bg-grey-800 ring-grey-700 rounded-sm text-grey-50 max-w-2xl',
+          }"
         >
-          {{ layerItem.layer_alias }}
-        </p>
+          <p
+            :class="[
+              visibility === 'visible' ? 'text-grey-200' : 'text-grey-500',
+              'truncate max-w-[12rem] overflow-hidden',
+            ]"
+          >
+            {{ layerItem.layer_alias }}
+          </p>
+        </UTooltip>
         <p
           :class="[
             visibility === 'visible' ? 'text-grey-400' : 'text-grey-500',
@@ -155,7 +183,7 @@ const toggleVisibility = () => {
           {{ layerItem.geometry_type }}
         </p>
       </div>
-      <div class="flex gap-2 items-center justify-end w-4/12">
+      <div class="flex gap-2 items-center justify-end">
         <button
           :disabled="visibility === 'none'"
           @click="isShowStyling = !isShowStyling"
@@ -188,40 +216,40 @@ const toggleVisibility = () => {
         <MapManagementMenu :item="layerItem" :disabled="isShowStyling" />
       </div>
     </div>
-    <TransitionRoot
-      :show="isShowStyling"
-      enter="transition duration-500 ease-in-out"
-      enterFrom="transform max-h-0 opacity-0"
-      enterTo="transform max-h-96 opacity-100"
-      leave="transition duration-500 ease-in-out"
-      leaveFrom="transform max-h-96 opacity-100"
-      leaveTo="transform max-h-0 opacity-0"
-      class="transition-all duration-500 ease-in-out"
+    <Transition
+      enter-active-class="transition duration-500 ease-in-out"
+      enter-from-class="transform max-h-0 opacity-0"
+      enter-to-class="transform max-h-96 opacity-100"
+      leave-active-class="transition duration-500 ease-in-out"
+      leave-from-class="transform max-h-96 opacity-100"
+      leave-to-class="transform max-h-0 opacity-0"
     >
-      <MapManagementStylingCircle
-        v-if="layerItem.geometry_type === geomTypeCircle"
-        :layerItem="layerItem"
-      />
-      <MapManagementStylingLine
-        v-else-if="layerItem.geometry_type === geomTypeLine"
-        :layerItem="layerItem"
-      />
-      <MapManagementStylingFill
-        v-else-if="layerItem.geometry_type === geomTypePolygon"
-        :layerItem="layerItem"
-      />
-      <MapManagementStylingSymbol
-        v-else-if="layerItem.geometry_type === geomTypeSymbol"
-        :layerItem="layerItem"
-      />
-      <MapManagementStyling
-        v-else
-        :source="layerItem.source"
-        :opacity="opacity ? parseFloat(opacity) : 0"
-        :layerId="layerItem.layer_id"
-        :geometryType="layerItem.geometry_type"
-        @update-opacity="updateOpacity"
-      />
-    </TransitionRoot>
+      <div v-if="isShowStyling" class="transition-all duration-500 ease-in-out">
+        <MapManagementStylingCircle
+          v-if="layerItem.geometry_type === geomTypeCircle"
+          :layerItem="layerItem"
+        />
+        <MapManagementStylingLine
+          v-else-if="layerItem.geometry_type === geomTypeLine"
+          :layerItem="layerItem"
+        />
+        <MapManagementStylingFill
+          v-else-if="layerItem.geometry_type === geomTypePolygon"
+          :layerItem="layerItem"
+        />
+        <MapManagementStylingSymbol
+          v-else-if="layerItem.geometry_type === geomTypeSymbol"
+          :layerItem="layerItem"
+        />
+        <MapManagementStyling
+          v-else
+          :source="layerItem.source"
+          :opacity="opacity ? parseFloat(opacity) : 0"
+          :layerId="layerItem.layer_id"
+          :geometryType="layerItem.geometry_type"
+          @update-opacity="updateOpacity"
+        />
+      </div>
+    </Transition>
   </div>
 </template>

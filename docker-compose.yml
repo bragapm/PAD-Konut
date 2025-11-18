@@ -64,6 +64,17 @@ services:
       - MESSENGER_STORE=redis
       - PM2_INSTANCES
       - PM2_AUTO_RESTART
+      # auths
+      - AUTH_PROVIDERS
+      - AUTH_KEYCLOAK_DRIVER
+      - AUTH_KEYCLOAK_CLIENT_ID
+      - AUTH_KEYCLOAK_CLIENT_SECRET
+      - AUTH_KEYCLOAK_ISSUER_URL
+      - AUTH_KEYCLOAK_IDENTIFIER_KEY
+      - AUTH_KEYCLOAK_MODE
+      - AUTH_KEYCLOAK_DEFAULT_ROLE_ID
+      # subscriber
+      - SUBSCRIBER_SERVICE_URL
     deploy:
       replicas: ${DIRECTUS_REPLICAS:-1}
     restart: unless-stopped
@@ -81,6 +92,8 @@ services:
       - STORAGE_S3_ROOT
       - ADMIN_TOKEN
       - DIRECTUS_PUBLIC_URL
+    deploy:
+      replicas: ${GEOPROCESSING_REPLICAS:-1}
     restart: unless-stopped
 
   graphile:
@@ -113,3 +126,12 @@ services:
     volumes:
       - "./server/nginx.conf:/etc/nginx/nginx.conf:ro"
     restart: unless-stopped
+
+  # subscriber:
+  #   build:
+  #     context: subscriber
+  #   environment:
+  #     - DB_CONNECTION_STRING
+  #     - DIRECTUS_KEY
+  #     - DIRECTUS_SECRET
+  #   restart: unless-stopped

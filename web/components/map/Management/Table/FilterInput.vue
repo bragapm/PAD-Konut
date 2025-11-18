@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { inject } from "vue";
 import IcCross from "~/assets/icons/ic-cross.svg";
 
 const stringOperatorLists = [
@@ -55,8 +56,13 @@ const props = withDefaults(
   }
 );
 
-const filterStore = useFilter();
-const { updateFilter, deleteById } = filterStore;
+const filterProps = inject<{
+  deleteById: Function;
+  updateFilter: Function;
+}>("filterPropsProvider");
+if (!filterProps) {
+  throw new Error("filterProps not provided");
+}
 
 const field = ref(props.inputData.field);
 const operator = ref(props.inputData.operator);
@@ -95,7 +101,7 @@ watchEffect(() => {
 watch(
   [() => field.value, () => operator.value, () => value.value],
   ([newFieldValue, newOperatorValue, newInputValue]) => {
-    updateFilter(props.id, {
+    filterProps.updateFilter(props.id, {
       id: props.id,
       field: newFieldValue,
       operator: newOperatorValue,
@@ -107,79 +113,42 @@ watch(
 </script>
 
 <template>
-  <div class="flex gap-2" :style="{ marginLeft: level * 20 + 'px' }">
+  <div
+    class="flex gap-2 items-center"
+    :style="{ marginLeft: level * 20 + 'px' }"
+  >
     <USelectMenu
-      searchable-placeholder="Search"
       v-model="field"
       placeholder="Select Column"
-      :options="fieldOptions"
-      option-attribute="label"
-      value-attribute="key"
-      color="gray"
-      :popper="{ placement: 'bottom-end' }"
-      :ui="{ base: 'w-32', rounded: 'rounded-xxs' }"
-      :uiMenu="{
-        width: 'w-32',
-        height: 'max-h-40',
-        base: 'space-y-1',
-        rounded: 'rounded-xxs',
-        background: 'bg-grey-700',
-        ring: 'ring-1 ring-grey-600',
-        option: {
-          base: 'cursor-pointer hover:text-grey-700',
-          padding: 'px-1.5 py-1',
-          selected: 'bg-grey-200 text-grey-700',
-          color: 'text-grey-200',
-          rounded: 'rounded-xxs',
-          active: 'bg-grey-200 text-grey-700',
-          size: 'text-xs',
-        },
+      :items="fieldOptions"
+      value-key="key"
+      :content="{
+        side: 'bottom',
+        align: 'start',
       }"
-      size="2xs"
+      class="w-20"
+      size="sm"
     />
     <USelectMenu
-      searchable-placeholder="Search"
       v-model="operator"
       placeholder="Select Operation"
-      :options="operatorOptions || stringOperatorLists"
-      option-attribute="label"
-      value-attribute="key"
-      color="gray"
-      :popper="{ placement: 'bottom-end' }"
-      :ui="{ base: 'w-32', rounded: 'rounded-xxs' }"
-      :uiMenu="{
-        width: 'w-32',
-        height: 'max-h-40',
-        base: 'space-y-1',
-        rounded: 'rounded-xxs',
-        background: 'bg-grey-700',
-        ring: 'ring-1 ring-grey-600',
-        option: {
-          base: 'cursor-pointer hover:text-grey-700',
-          padding: 'px-1.5 py-1',
-          selected: 'bg-grey-200 text-grey-700',
-          color: 'text-grey-200',
-          rounded: 'rounded-xxs',
-          active: 'bg-grey-200 text-grey-700',
-          size: 'text-xs',
-        },
+      :items="operatorOptions || stringOperatorLists"
+      value-key="key"
+      :content="{
+        side: 'bottom',
+        align: 'start',
       }"
-      size="2xs"
+      class="w-32"
+      size="sm"
     />
-    <UInput
-      v-model="value"
-      color="gray"
-      :ui="{ rounded: 'rounded-xxs' }"
-      placeholder="Input Value"
-      size="2xs"
-    >
+    <UInput v-model="value" color="gray" placeholder="Input Value" size="xs">
     </UInput>
     <UButton
-      @click="() => deleteById(id)"
-      size="2xs"
+      @click="() => filterProps.deleteById(id)"
+      size="xs"
       color="brand"
       variant="outline"
-      :ui="{ rounded: 'rounded-xxs', base: 'w-6 h-6 justify-center' }"
+      class="rounded-sm w-6 h-6 justify-center"
     >
       <template #leading>
         <IcCross class="w-2 h-2 text-brand-500" :fontControlled="false" />

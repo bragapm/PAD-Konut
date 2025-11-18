@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import IcCross from "~/assets/icons/ic-cross.svg";
-import { TabGroup, TabList, Tab, TabPanels, TabPanel } from "@headlessui/vue";
+import { TabsRoot, TabsList, TabsTrigger, TabsContent } from "reka-ui";
 
 const featureStore = useFeature();
 const tabItems = [
@@ -27,30 +27,28 @@ const tabItems = [
   </div>
   <hr class="mx-3" />
 
-  <div class="grow overflow-hidden px-3 my-3">
-    <TabGroup>
-      <TabList
+  <div class="grow overflow-hidden px-3 my-3 flex flex-col">
+    <TabsRoot default-value="onprocess" class="flex flex-col h-full">
+      <TabsList
         class="grid grid-cols-2 gap-2 text-center cursor-pointer divide-x-2 text-xs"
       >
-        <Tab
+        <TabsTrigger
           v-for="item in tabItems"
-          as="template"
           :key="item.key"
-          v-slot="{ selected }"
+          :value="item.key"
+          as-child
         >
-          <p :class="[selected ? 'text-grey-200' : 'text-grey-500']">
+          <p class="data-[state=active]:text-grey-200 data-[state=inactive]:text-grey-500">
             {{ item.label }}
           </p>
-        </Tab>
-      </TabList>
-      <TabPanels class="mt-3 overflow-y-auto h-full pb-10">
-        <TabPanel>
-          <MapGeoprocessingQueue />
-        </TabPanel>
-        <TabPanel>
-          <MapGeoprocessingHistory />
-        </TabPanel>
-      </TabPanels>
-    </TabGroup>
+        </TabsTrigger>
+      </TabsList>
+      <TabsContent value="onprocess" class="mt-3 overflow-y-auto flex-1 pb-10">
+        <MapGeoprocessingQueue />
+      </TabsContent>
+      <TabsContent value="completed" class="mt-3 overflow-y-auto flex-1 pb-10">
+        <MapGeoprocessingHistory />
+      </TabsContent>
+    </TabsRoot>
   </div>
 </template>

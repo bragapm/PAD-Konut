@@ -32,7 +32,7 @@ const [container, slider] = useKeenSlider({
 </script>
 
 <template v-if="item.contents.length">
-  <div class="grid grid-cols-2 gap-x-7 bg-grey-100 rounded-lg p-11">
+  <div class="grid grid-cols-2 gap-x-7 bg-grey-100 rounded-[20px] p-11">
     <div class="flex flex-col justify-between">
       <div class="space-y-3">
         <p class="font-medium text-lg">
@@ -50,8 +50,7 @@ const [container, slider] = useKeenSlider({
             item.contents[current].block_info_slides_contents_id.button_url
           "
           color="brand"
-          :ui="{ rounded: 'rounded-[4px]' }"
-          class="p-3"
+          class="p-3 rounded-sm"
           :to="item.contents[current].block_info_slides_contents_id.button_url"
           target="_blank"
         >
@@ -72,7 +71,7 @@ const [container, slider] = useKeenSlider({
         </div>
       </div>
     </div>
-    <div class="w-full h-[42rem] rounded-lg overflow-hidden">
+    <div class="w-full h-[42rem] rounded-[20px] overflow-hidden">
       <NuxtImg
         v-if="!slider"
         provider="directus"

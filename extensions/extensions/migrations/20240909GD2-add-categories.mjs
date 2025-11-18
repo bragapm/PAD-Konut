@@ -40,6 +40,11 @@ export async function up(knex) {
         category_name: "Difference",
         parent: "b872cc0d-0e52-4b7f-b102-3924e2bd8211",
       },
+      {
+        category_id: "2c715091-fefb-4bb9-8e59-578ee96d1c1b",
+        category_name: "Table Join",
+        parent: "b872cc0d-0e52-4b7f-b102-3924e2bd8211",
+      },
     ])
     .onConflict("category_id")
     .ignore();
@@ -56,6 +61,7 @@ export async function down(knex) {
       "60dc6c1f-0590-4056-9a15-66745d230cf2",
       "44fe4dcc-6171-43a1-8a56-f14bc67b7fdd",
       "0640361f-7aa9-48fa-9ee8-c712fc908206",
+      "2c715091-fefb-4bb9-8e59-578ee96d1c1b",
     ])
     .del();
 }

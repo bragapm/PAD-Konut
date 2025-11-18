@@ -69,13 +69,23 @@ const {
   isError: isHeaderError,
 } = useQuery({
   queryKey: ["/panel/vector-tiles-attribute-table-header/", selectedLayer],
-  queryFn: () =>
-    $fetch<{
-      data: HeaderData[];
-    }>(
+  queryFn: async () => {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+
+    if (authStore.accessToken) {
+      headers["Authorization"] = `Bearer ${authStore.accessToken}`;
+    }
+
+    const res = await $fetch<{ data: HeaderData[] }>(
       "/panel/vector-tiles-attribute-table-header/" +
-        selectedLayer.value?.layer_name
-    ).then((r) => r.data),
+        selectedLayer.value?.layer_name,
+      { headers }
+    );
+
+    return res.data;
+  },
 });
 const columnOptions = computed<
   {
@@ -99,86 +109,32 @@ const columnOptions = computed<
     <div class="space-y-1">
       <p class="text-2xs text-white">Dissolved Layer</p>
       <USelectMenu
-        searchable
-        searchable-placeholder="Search Layer"
         v-model="selectedLayer"
-        :options="activeLayers"
-        :search-attributes="['layer_name', 'label']"
-        option-attribute="label"
+        :items="activeLayers"
         placeholder="Select layer"
-        color="gray"
-        :ui="{
-          rounded: 'rounded-xxs',
-        }"
-        :uiMenu="{
-          base: 'space-y-1',
-          rounded: 'rounded-xxs',
-          background: 'bg-grey-700',
-          ring: 'ring-1 ring-grey-600',
-          option: {
-            base: 'cursor-pointer hover:text-grey-700',
-            padding: 'px-1.5 py-1',
-            selected: 'bg-grey-200 text-grey-700',
-            color: 'text-grey-200',
-            rounded: 'rounded-xxs',
-            active: 'bg-grey-200 text-grey-700',
-            size: 'text-xs',
-          },
-          input: 'bg-grey-700 text-grey-200 text-xs',
-        }"
-        size="2xs"
+        size="sm"
       />
     </div>
     <div class="space-y-1">
       <p class="text-2xs text-white">Dissolved Columns</p>
       <USelectMenu
-        searchable
-        searchable-placeholder="Search Columns"
         v-model="selectedColumns"
-        :options="columnOptions"
-        :search-attributes="['column_name', 'label']"
-        option-attribute="label"
+        :items="columnOptions"
         placeholder="Select column(s)"
-        color="gray"
-        :ui="{
-          rounded: 'rounded-xxs',
-        }"
-        :uiMenu="{
-          base: 'space-y-1',
-          rounded: 'rounded-xxs',
-          background: 'bg-grey-700',
-          ring: 'ring-1 ring-grey-600',
-          option: {
-            base: 'cursor-pointer hover:text-grey-700',
-            padding: 'px-1.5 py-1',
-            selected: 'bg-grey-200 text-grey-700',
-            color: 'text-grey-200',
-            rounded: 'rounded-xxs',
-            active: 'bg-grey-200 text-grey-700',
-            size: 'text-xs',
-          },
-          input: 'bg-grey-700 text-grey-200 text-xs',
-        }"
-        size="2xs"
+        size="sm"
         multiple
       />
     </div>
     <div class="space-y-1">
       <p class="text-2xs text-white">Output Layer Name</p>
-      <UInput
-        v-model="outputLayer"
-        color="gray"
-        :ui="{ rounded: 'rounded-xxs' }"
-        size="2xs"
-      >
-      </UInput>
+      <UInput v-model="outputLayer" class="w-full" size="sm"> </UInput>
     </div>
   </div>
   <div class="p-2">
     <UButton
       @click="handleDissolve"
       color="brand"
-      :ui="{ rounded: 'rounded-[4px]' }"
+      :ui="{ rounded: 'rounded-sm' }"
       class="w-full justify-center text-sm"
       :loading="false"
       >Apply Dissolve</UButton

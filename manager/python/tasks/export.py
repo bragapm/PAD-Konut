@@ -96,12 +96,13 @@ def export(table_name: str, format_file: str, downloader: str | None):
             with conn:
                 with conn.cursor() as cur:
                     cur.execute(
-                        "INSERT INTO directus_files(id,storage,filename_disk,filename_download,type,folder,uploaded_by,filesize) VALUES(%s,%s,%s,%s,%s,%s,%s,%s)",
+                        "INSERT INTO directus_files(id,storage,filename_disk,filename_download,title,type,folder,uploaded_by,filesize) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s)",
                         [
                             file_id,
                             "s3",
                             object_key,
                             table_name + ".zip",
+                            table_name,
                             "application/zip",
                             LAYER_EXPORTS_FOLDER_ID,
                             downloader,

@@ -30,14 +30,14 @@ import IcMapLayer from "~/assets/icons/ic-map-layer.svg";
       >
       </CoreButtonIcon>
       <div
-        class="flex items-center justify-center w-full h-full border border-grey-700 py-1 px-2 rounded-xxs text-2xs text-grey-400"
+        class="flex items-center justify-center w-full h-full border border-grey-700 py-1 px-2 rounded-sm text-2xs text-grey-400"
       >
         3mph
       </div>
     </div>
 
     <button
-      class="w-full text-white text-xs rounded-xxs bg-brand-600 hover:bg-brand-700 p-1 h-full"
+      class="w-full text-white text-xs rounded-sm bg-brand-600 hover:bg-brand-700 p-1 h-full"
     >
       Analyze
     </button>

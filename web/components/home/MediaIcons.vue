@@ -54,7 +54,7 @@ const genWidthClass = (totalCol: number) => {
 </script>
 
 <template>
-  <div class="flex flex-col gap-3 bg-grey-100 rounded-lg p-11">
+  <div class="flex flex-col gap-3 bg-grey-100 rounded-[20px] p-11">
     <p v-if="item.subtitle" class="font-medium text-lg">
       {{ item.subtitle }}
     </p>
@@ -63,7 +63,7 @@ const genWidthClass = (totalCol: number) => {
     <div
       :class="
         item.variant === 'border' &&
-        'border border-grey-500 rounded-lg overflow-hidden'
+        'border border-grey-500 rounded-[20px] overflow-hidden'
       "
     >
       <table class="w-full">

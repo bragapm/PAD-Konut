@@ -39,8 +39,7 @@ export async function up(knex) {
       ('block_media_icons_block_media_icons_contents','read','{}','{}','*'),
       ('block_cta','read','{}','{}','*'),
       ('block_footer','read','{}','{}','*'),
-      ('map','read','{}','{}','lang,information,information_attachments,title,subtitle,initial_map_view'),
-      ('shared_map','read','{}','{}','*');
+      ('map','read','{}','{}','lang,information,information_attachments,title,subtitle,initial_map_view');
 
     CREATE OR REPLACE FUNCTION handle_non_admin_non_app_directus_roles_insert()
       RETURNS trigger
@@ -62,6 +61,7 @@ export async function up(knex) {
           (NEW.id,'categories','read','{}','{}','*'),
           (NEW.id,'three_d_tiles','read','{"_and":[{"permission_type":{"_in":["roles","roles+public"]}},{"allowed_roles":{"directus_roles_id":{"_eq":"$CURRENT_ROLE"}}},{"listed":{"_eq":true}}]}','{}','layer_id,layer_alias,preview,description,category,active,visible,opacity,point_size,point_color'),
           (NEW.id,'shared_map','create','{}','{}','*'),
+          (NEW.id,'shared_map','read','{}','{}','id,map_state'),
           (NEW.id,'directus_files','create','{}','{"_and":[{"folder":{"_in":["${LAYER_DATA_FOLDER_ID}","${LAYER_PREVIEWS_FOLDER_ID}"]}}]}','*'),
           (NEW.id,'geoprocessing_queue','read','{"_and":[{"uploader":{"_eq":"$CURRENT_USER"}}]}','{}','message_id,result,state,filename,status,mtime,result_ttl');
         RETURN NULL;
@@ -74,6 +74,7 @@ export async function up(knex) {
     WHEN (NEW.admin_access = FALSE AND NEW.app_access = FALSE)
     EXECUTE FUNCTION handle_non_admin_non_app_directus_roles_insert();
   `);
+// TODO better default non admin non app default permissions management. maybe use table so additional rule only could be inserted and the trigger function only needs to select it?
 }
 
 export async function down(knex) {
@@ -81,6 +82,6 @@ export async function down(knex) {
     DROP TRIGGER IF EXISTS on_non_admin_non_app_directus_roles_insert ON directus_roles;
     DROP FUNCTION IF EXISTS handle_non_admin_non_app_directus_roles_insert();
 
-    DELETE FROM directus_permissions WHERE collection IN ('directus_settings','directus_files','vector_tiles','symbol','raster_tiles','raster_overlays','line','fill','external_tiles','circle','categories','three_d_tiles','block_hero_slides','block_hero_slides_contents','block_hero_slides_block_hero_slides_contents','home','home_blocks','block_hero_single','block_info_single','block_info_slides','block_info_slides_contents','block_info_slides_block_info_slides_contents','block_info_accordion','block_info_accordion_contents','block_info_accordion_block_info_accordion_contents','block_media_video','block_media_icons','block_media_icons_contents','block_media_icons_block_media_icons_contents','block_cta','block_footer','map','shared_map') AND role IS NULL AND action = 'read';
+    DELETE FROM directus_permissions WHERE collection IN ('directus_settings','directus_files','vector_tiles','symbol','raster_tiles','raster_overlays','line','fill','external_tiles','circle','categories','three_d_tiles','block_hero_slides','block_hero_slides_contents','block_hero_slides_block_hero_slides_contents','home','home_blocks','block_hero_single','block_info_single','block_info_slides','block_info_slides_contents','block_info_slides_block_info_slides_contents','block_info_accordion','block_info_accordion_contents','block_info_accordion_block_info_accordion_contents','block_media_video','block_media_icons','block_media_icons_contents','block_media_icons_block_media_icons_contents','block_cta','block_footer','map') AND role IS NULL AND action = 'read';
   `);
 }

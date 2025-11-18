@@ -6,6 +6,7 @@ import merge from "./merge.mjs";
 import spatialJoin from "./spatialJoin.mjs";
 import union from "./union.mjs";
 import difference from "./difference.mjs";
+import tableJoin from "./tableJoin.mjs";
 
 const routes = {
   clip,
@@ -15,6 +16,7 @@ const routes = {
   spatialJoin,
   union,
   difference,
+  tableJoin,
 };
 
 export default (router, { database, logger }) => {

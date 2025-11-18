@@ -42,11 +42,7 @@ export async function up(knex) {
       circle_style integer REFERENCES circle (id)
         ON DELETE SET NULL,
       symbol_style integer REFERENCES symbol (id)
-        ON DELETE SET NULL,
-      fill_class_columns text,
-      line_class_columns text,
-      circle_class_columns text,
-      symbol_class_columns text
+        ON DELETE SET NULL
     );
 
     INSERT INTO directus_collections(collection,icon,color,"group",collapse)
@@ -94,10 +90,6 @@ export async function up(knex) {
       ('vector_tiles','line_style','m2o','select-dropdown-m2o','{"template":"{{name}}"}','related-values','{"template":"{{name}}"}',FALSE,FALSE,NULL,'full',NULL,NULL,'[{"name":"No POINT","rule":{"geometry_type":{"_contains":"POINT"}},"hidden":true}]',FALSE,NULL,NULL,NULL),
       ('vector_tiles','circle_style','m2o','select-dropdown-m2o','{"template":"{{name}}"}','related-values','{"template":"{{name}}"}',FALSE,FALSE,NULL,'full',NULL,NULL,NULL,FALSE,NULL,NULL,NULL),
       ('vector_tiles','symbol_style','m2o','select-dropdown-m2o','{"template":"{{name}}"}','related-values','{"template":"{{name}}"}',FALSE,FALSE,NULL,'full',NULL,NULL,NULL,FALSE,NULL,NULL,NULL),
-      ('vector_tiles','fill_class_columns',NULL,'input',NULL,NULL,NULL,TRUE,TRUE,NULL,'full',NULL,NULL,NULL,FALSE,NULL,NULL,NULL),
-      ('vector_tiles','line_class_columns',NULL,'input',NULL,NULL,NULL,TRUE,TRUE,NULL,'full',NULL,NULL,NULL,FALSE,NULL,NULL,NULL),
-      ('vector_tiles','circle_class_columns',NULL,'input',NULL,NULL,NULL,TRUE,TRUE,NULL,'full',NULL,NULL,NULL,FALSE,NULL,NULL,NULL),
-      ('vector_tiles','symbol_class_columns',NULL,'input',NULL,NULL,NULL,TRUE,TRUE,NULL,'full',NULL,NULL,NULL,FALSE,NULL,NULL,NULL),
       ('vector_tiles_directus_roles','id',NULL,NULL,NULL,NULL,NULL,FALSE,TRUE,NULL,'full',NULL,NULL,NULL,FALSE,NULL,NULL,NULL),
       ('vector_tiles_directus_roles','vector_tiles_layer_id',NULL,NULL,NULL,NULL,NULL,FALSE,TRUE,NULL,'full',NULL,NULL,NULL,FALSE,NULL,NULL,NULL),
       ('vector_tiles_directus_roles','directus_roles_id',NULL,NULL,NULL,NULL,NULL,FALSE,TRUE,NULL,'full',NULL,NULL,NULL,FALSE,NULL,NULL,NULL);

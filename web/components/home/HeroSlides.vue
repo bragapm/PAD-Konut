@@ -60,7 +60,7 @@ function nextTimeout() {
 
 <template v-if="item.contents.length">
   <div
-    class="relative w-full h-[50rem] rounded-lg overflow-hidden"
+    class="relative w-full h-[50rem] rounded-[20px] overflow-hidden"
     @mouseover="
       () => {
         mouseOver = true;
@@ -104,8 +104,7 @@ function nextTimeout() {
               .primary_button_url
           "
           color="brand"
-          :ui="{ rounded: 'rounded-[4px]' }"
-          class="p-3"
+          class="p-3 rounded-sm"
           :to="
             item.contents[current].block_hero_slides_contents_id
               .primary_button_url
@@ -126,8 +125,7 @@ function nextTimeout() {
           "
           color="brand"
           variant="outline"
-          :ui="{ rounded: 'rounded-[4px]' }"
-          class="p-3"
+          class="p-3 rounded-sm"
           :to="
             item.contents[current].block_hero_slides_contents_id
               .secondary_button_url

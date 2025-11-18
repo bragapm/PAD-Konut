@@ -10,5 +10,7 @@ from .clip import clip as clip
 from .union import union as union
 from .difference import difference as difference
 from .export import export as export
+from .table_join import table_join as table_join
+from .download_sentinel import download_sentinel as download_sentinel
 
 # Add new actor imports here as you create them

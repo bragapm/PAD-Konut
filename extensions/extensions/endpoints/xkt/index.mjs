@@ -7,12 +7,7 @@ import {
 } from "@directus/errors";
 
 import minioClient from "../../utils/minioClient.mjs";
-
-const validateUuid = (input) => {
-  const uuidRegex =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  return uuidRegex.test(input);
-};
+import validateUuid from "../../utils/validateUuid.mjs";
 
 const ObjectNotFoundError = createError(
   "OBJECT_NOT_FOUND",

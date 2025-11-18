@@ -4,21 +4,21 @@ import traceback
 
 import dramatiq
 from dramatiq.middleware import TimeLimitExceeded
-from osgeo import gdal
-
 from lib.create_table import create_table_from_header_info
 from lib.fill_table import fill_table_with_layer_feature
 from lib.get_header_info import get_gdal_dataset, get_header_info_from_data_layer
+from lib.kml_style_parser import process_layer_style
 from lib.register_table import (
     register_table_to_directus,
 )
+from osgeo import gdal, ogr
 from utils import (
-    logger,
-    pool,
-    is_dev_mode,
-    init_gdal_config,
     generate_local_temp_dir_path,
     generate_vrt_path,
+    init_gdal_config,
+    is_dev_mode,
+    logger,
+    pool,
     sanitize_table_name,
 )
 
@@ -50,8 +50,14 @@ def vector_transform(
         processed_tables = []
         errors = []
         for i in range(layer_count):
+
             layer = dataset.GetLayerByIndex(i)
             layer_name = layer.GetName()
+            geom_type: int = layer.GetGeomType()
+            temp_geom = ogr.Geometry(geom_type or 3)
+            geom_name = temp_geom.GetGeometryName()
+            layer_style_id = process_layer_style(object_key, layer_name, geom_name) if format_file == 'kml' else {}
+
             if layer_name == "layer_styles":
                 continue
             final_table_name = (
@@ -80,6 +86,7 @@ def vector_transform(
                     uploader,
                     additional_config,
                     not is_dev_mode(),
+                    layer_style_id
                 )
                 processed_tables.append(final_table_name)
             except Exception as err:

@@ -32,12 +32,12 @@ const fetchData = async (categoryId: string) => {
     }
     isFetching.value = false;
   } else {
-    const [vectorTiles, rasterTiles, threeDTiles, externalTiles] =
+    const [vectorTiles, rasterTiles, threeDTiles, externalTiles, externalVector] =
       await Promise.all([
         $fetch<{
           data: LayerConfigLists;
         }>(
-          `/panel/items/vector_tiles?fields=layer_id,layer_name,geometry_type,bounds,minzoom,maxzoom,layer_alias,hover_popup_columns,click_popup_columns,image_columns,active,description,preview,category.*,fill_style.*,line_style.*,circle_style.*,symbol_style.*&sort=layer_name&${
+          `/panel/items/vector_tiles?fields=layer_id,layer_name,geometry_type,bounds,minzoom,maxzoom,layer_alias,hover_popup_columns,click_popup_columns,image_columns,active,description,preview,category.*,fill_style.*,line_style.*,circle_style.*,symbol_style.*.*&sort=layer_name&${
             categoryId === staticKey.other
               ? `filter[category][_null]=true`
               : `filter[category][category_id][_eq]=${categoryId}`
@@ -98,12 +98,29 @@ const fetchData = async (categoryId: string) => {
             },
           }
         ),
+        $fetch<{
+          data: LayerConfigLists;
+        }>(
+          `/panel/items/external_vector?fields=layer_id,layer_alias,bounds,preview,description,category.*,hover_popup_columns,click_popup_columns,image_columns,listed,active,fill_style.*,line_style.*,circle_style.*,symbol_style.*.*&sort=layer_alias&${
+            categoryId === staticKey.other
+              ? `filter[category][_null]=true`
+              : `filter[category][category_id][_eq]=${categoryId}`
+          }`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: "Bearer " + authStore.accessToken,
+            },
+          }
+        ),
       ]);
     catalogueData.value = getLayersArr({
       vectorTiles,
       rasterTiles,
       threeDTiles,
       externalTiles,
+      externalVector,
     });
     isFetching.value = false;
   }
@@ -160,7 +177,6 @@ watchEffect(async () => {
         <div class="flex flex-col p-2 gap-2">
           <div class="border-t border-grey-700" />
           <UButton
-            :ui="{ rounded: 'rounded-xxs' }"
             :label="!isOption ? 'Load Local/Upload Data' : 'Back to Catalogue'"
             variant="outline"
             color="brand"

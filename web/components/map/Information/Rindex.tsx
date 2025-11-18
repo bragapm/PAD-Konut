@@ -43,15 +43,15 @@ export default createElement({
         <div class='flex-1 overflow-scroll px-3 my-3'>
           {this.isLoading ? (
             <div class='animate-pulse space-y-3'>
-              <div class='w-full h-8 bg-grey-700 rounded-xs'></div>
-              <div class='w-full h-8 bg-grey-700 rounded-xs'></div>
-              <div class='w-full h-44 bg-grey-700 rounded-xs'></div>
-              <div class='w-full h-4 bg-grey-700 rounded-xs'></div>
-              <div class='w-full h-4 bg-grey-700 rounded-xs'></div>
-              <div class='w-full h-4 bg-grey-700 rounded-xs'></div>
-              <div class='w-full h-4 bg-grey-700 rounded-xs'></div>
-              <div class='w-full h-4 bg-grey-700 rounded-xs'></div>
-              <div class='w-full h-4 bg-grey-700 rounded-xs'></div>
+              <div class='w-full h-8 bg-grey-700 rounded-lg'></div>
+              <div class='w-full h-8 bg-grey-700 rounded-lg'></div>
+              <div class='w-full h-44 bg-grey-700 rounded-lg'></div>
+              <div class='w-full h-4 bg-grey-700 rounded-lg'></div>
+              <div class='w-full h-4 bg-grey-700 rounded-lg'></div>
+              <div class='w-full h-4 bg-grey-700 rounded-lg'></div>
+              <div class='w-full h-4 bg-grey-700 rounded-lg'></div>
+              <div class='w-full h-4 bg-grey-700 rounded-lg'></div>
+              <div class='w-full h-4 bg-grey-700 rounded-lg'></div>
             </div>
           ) : (
             <MapMarkdownRenderer source={this.data?.information} />

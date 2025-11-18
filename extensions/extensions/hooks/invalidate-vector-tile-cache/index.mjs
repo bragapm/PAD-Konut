@@ -1,5 +1,5 @@
 export default ({ schedule }, { database, logger }) => {
-  schedule("*/30 * * * *", async () => {
+  schedule("0 0 * * *", async () => {
     try {
       // Directly delete expired items from the vector_tile_cache table
       await database("vector_tile_cache")

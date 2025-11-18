@@ -2,7 +2,6 @@
 import { ref } from "vue";
 import IcArrowReg from "~/assets/icons/ic-arrow-reg.svg";
 import IcTrash from "~/assets/icons/ic-trash.svg";
-import { TransitionRoot } from "@headlessui/vue";
 import type { AnalysisResult } from "~/utils/types";
 
 const props = defineProps<{
@@ -19,7 +18,7 @@ const analysisStore = useAnalysisResult();
       :class="[
         isExpand
           ? 'bg-grey-700 rounded-t-xxs'
-          : 'bg-transparent hover:ring-1 hover:ring-grey-500 rounded-xxs',
+          : 'bg-transparent hover:ring-1 hover:ring-grey-500 rounded-sm',
         'cursor-pointer text-xs',
         'p-2 flex justify-between items-center gap-2 w-full',
       ]"
@@ -51,35 +50,35 @@ const analysisStore = useAnalysisResult();
         </button>
       </div>
     </div>
-    <TransitionRoot
-      :show="isExpand"
-      enter="transition duration-500 ease-in-out"
-      enterFrom="transform max-h-0 opacity-0"
-      enterTo="transform max-h-96 opacity-100"
-      leave="transition duration-500 ease-in-out"
-      leaveFrom="transform max-h-96 opacity-100"
-      leaveTo="transform max-h-0 opacity-0"
-      class="transition-all duration-500 ease-in-out text-grey-400 text-xs"
+    <Transition
+      enter-active-class="transition duration-500 ease-in-out"
+      enter-from-class="transform max-h-0 opacity-0"
+      enter-to-class="transform max-h-96 opacity-100"
+      leave-active-class="transition duration-500 ease-in-out"
+      leave-from-class="transform max-h-96 opacity-100"
+      leave-to-class="transform max-h-0 opacity-0"
     >
-      <div class="border-x border-grey-700 p-2">
-        <h5>Area</h5>
-        <p class="text-grey-200 font-medium">{{ result.description }}</p>
-      </div>
-      <div class="border border-grey-700 rounded-b-xxs p-2">
-        <h5>Layers intersect Buffer Area</h5>
-        <div class="my-2 space-y-1">
-          <h6 class="text-grey-500">{{ result.layer }}</h6>
-          <div
-            class="flex items-center text-grey-200"
-            v-for="item in result.result"
-          >
-            <UIcon class="w-4 h-4" name="i-heroicons-bars-3-bottom-left" />
-            <p class="flex-grow mx-2 truncate">{{ item.category }}</p>
-            <span class="h-[1px] flex-grow bg-grey-700 rounded-xxs"></span>
-            <p class="w-1/6 text-right">{{ item.count }}</p>
+      <div v-if="isExpand" class="transition-all duration-500 ease-in-out text-grey-400 text-xs">
+        <div class="border-x border-grey-700 p-2">
+          <h5>Area</h5>
+          <p class="text-grey-200 font-medium">{{ result.description }}</p>
+        </div>
+        <div class="border border-grey-700 rounded-b-xxs p-2">
+          <h5>Layers intersect Buffer Area</h5>
+          <div class="my-2 space-y-1">
+            <h6 class="text-grey-500">{{ result.layer }}</h6>
+            <div
+              class="flex items-center text-grey-200"
+              v-for="item in result.result"
+            >
+              <UIcon class="w-4 h-4" name="i-heroicons-bars-3-bottom-left" />
+              <p class="flex-grow mx-2 truncate">{{ item.category }}</p>
+              <span class="h-[1px] flex-grow bg-grey-700 rounded-sm"></span>
+              <p class="w-1/6 text-right">{{ item.count }}</p>
+            </div>
           </div>
         </div>
       </div>
-    </TransitionRoot>
+    </Transition>
   </div>
 </template>

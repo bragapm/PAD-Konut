@@ -18,7 +18,7 @@ const props = withDefaults(defineProps<Props>(), {
     @click="onClick"
     size="sm"
     :class="active ? 'text-brand-500 bg-brand-950' : 'bg-transparent'"
-    class="hover:bg-grey-800 p-1 rounded-xxs flex items-center gap-2"
+    class="hover:bg-grey-800 p-1 rounded-sm flex items-center gap-2"
   >
     <component
       v-show="icon"

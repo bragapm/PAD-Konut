@@ -22,8 +22,8 @@ const isLoading = ref(false);
 
 const validateSigninData = (state: SigninData) => {
   const errors: FormError<keyof SigninData>[] = [];
-  if (!state.email) errors.push({ path: "email", message: "Required" });
-  if (!state.password) errors.push({ path: "password", message: "Required" });
+  if (!state.email) errors.push({ name: "email", message: "Required" });
+  if (!state.password) errors.push({ name: "password", message: "Required" });
   return errors;
 };
 const img = useImage();
@@ -63,14 +63,14 @@ const handleSignin = async (event: FormSubmitEvent<SigninData>) => {
   <div class="flex px-6 pb-6 h-[calc(100vh-120px)]">
     <div
       :class="[
-        'flex justify-end w-full rounded-lg',
+        'flex justify-end w-full rounded-[20px]',
         bgImgUrl ? 'bg-cover bg-center' : 'bg-grey-900',
       ]"
       :style="bgImgUrl && `background-image: ${bgImgUrl}`"
     >
       <div class="w-1/2 p-8">
         <div
-          class="flex flex-col bg-grey-800 rounded-lg h-full px-16 py-8 overflow-y-auto justify-center"
+          class="flex flex-col bg-grey-800 rounded-[20px] h-full px-16 py-8 overflow-y-auto justify-center"
         >
           <div class="flex flex-col text-center space-y-3 mb-16">
             <IcLogoGeodashboardFull
@@ -91,7 +91,7 @@ const handleSignin = async (event: FormSubmitEvent<SigninData>) => {
             class="flex flex-col space-y-3 mb-7"
             @submit="handleSignin"
           >
-            <UFormGroup name="email">
+            <UFormField name="email">
               <UInput
                 v-model="signinData.email"
                 type="email"
@@ -99,10 +99,9 @@ const handleSignin = async (event: FormSubmitEvent<SigninData>) => {
                 color="gray"
                 size="xl"
                 placeholder="Email"
-                :ui="{ rounded: 'rounded-xxs' }"
                 :disabled="isLoading"
               />
-            </UFormGroup>
+            </UFormField>
             <UFormGroup name="password">
               <UInput
                 v-model="signinData.password"
@@ -111,10 +110,6 @@ const handleSignin = async (event: FormSubmitEvent<SigninData>) => {
                 color="gray"
                 size="xl"
                 placeholder="Password"
-                :ui="{
-                  rounded: 'rounded-xxs',
-                  icon: { trailing: { pointer: '' } },
-                }"
                 :disabled="isLoading"
               >
                 <template #trailing>
@@ -136,7 +131,7 @@ const handleSignin = async (event: FormSubmitEvent<SigninData>) => {
               size="xl"
               type="submit"
               label="Sign In"
-              :ui="{ rounded: 'rounded-xxs' }"
+              class="rounded-xl"
             >
               <IcSpinner
                 class="text-white animate-spin h-6 w-6 p-1"
@@ -150,9 +145,8 @@ const handleSignin = async (event: FormSubmitEvent<SigninData>) => {
             block
             variant="outline"
             size="xl"
-            class="mb-7"
+            class="mb-7 rounded-xl"
             label="Sign In with Google"
-            :ui="{ rounded: 'rounded-xxs' }"
             :disabled="isLoading"
           >
             <template #leading>

@@ -30,7 +30,9 @@ watchEffect(async () => {
           "tile_size" in props.item && props.item.tile_size
             ? props.item.tile_size
             : 512,
-        bounds: bbox(props.item.bounds) as [number, number, number, number],
+        bounds: props.item.bounds
+          ? (bbox(props.item.bounds) as [number, number, number, number])
+          : undefined,
         minzoom: props.item.minzoom || 5,
         maxzoom: props.item.maxzoom || 15,
       });

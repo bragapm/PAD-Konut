@@ -1,11 +1,5 @@
 <script setup lang="ts">
 import type { LayerGroupedByCategory, LayerLists } from "~/utils/types";
-import {
-  Disclosure,
-  DisclosureButton,
-  DisclosurePanel,
-  TransitionRoot,
-} from "@headlessui/vue";
 import IcArrowReg from "~/assets/icons/ic-arrow-reg.svg";
 import { geomTypeThreeD } from "~/constants";
 
@@ -68,9 +62,8 @@ const handleChangeOrder = () => {
 </script>
 
 <template>
-  <Disclosure v-slot="{ open }">
-    <DisclosureButton
-      @click="() => (isPanelOpen = !isPanelOpen)"
+  <UCollapsible v-model:open="isPanelOpen" class="flex flex-col w-full">
+    <UButton
       :draggable="
         label === geomTypeThreeD || label === 'Terrain'
           ? false
@@ -102,43 +95,39 @@ const handleChangeOrder = () => {
           e.preventDefault();
         }
       "
+      color="gray"
+      variant="ghost"
       :class="[
         filtered || label === geomTypeThreeD || label === 'Terrain'
           ? 'cursor-pointer'
           : 'cursor-grab',
-        'text-sm text-grey-200 flex items-center justify-between w-full py-2',
+        'justify-between py-2 px-1',
       ]"
     >
-      <span>{{ label }}</span>
+      <p class="text-sm text-grey-200 font-normal">{{ label }}</p>
       <div
         :class="[
           isPanelOpen ? '' : 'rotate-180',
           'text-grey-50 transition-all duration-300',
         ]"
       >
-        <IcArrowReg :fontControlled="false" class="w-4 h-4 text-grey-400" />
-      </div>
-    </DisclosureButton>
-    <TransitionRoot
-      appear
-      :show="isPanelOpen"
-      as="div"
-      className="overflow-hidden"
-      enter="transition-all ease-in duration-300"
-      enterFrom="max-h-0"
-      enterTo="max-h-[100rem]"
-      leave="transition-all ease-out duration-300"
-      leaveFrom="max-h-[100rem]"
-      leaveTo="max-h-0"
-    >
-      <DisclosurePanel class="space-y-2 p-[1px] text-xs">
+        <IcArrowReg
+          :fontControlled="false"
+          class="w-4 h-4 text-grey-400"
+        /></div
+    ></UButton>
+
+    <template #content>
+      <div class="overflow-hidden space-y-2 p-[1px] text-xs">
         <template
           v-for="(item, index) in props.layerLists"
           :key="item.layer_id"
         >
           <MapManagementLayerVector
             v-if="
-              item.source === 'vector_tiles' || item.source === 'loaded_geojson'
+              item.source === 'vector_tiles' ||
+              item.source === 'loaded_geojson' ||
+              item.source === 'external_vector'
             "
             :filtered="filtered"
             :order="index"
@@ -168,7 +157,7 @@ const handleChangeOrder = () => {
             :layerItem="item"
           />
         </template>
-      </DisclosurePanel>
-    </TransitionRoot>
-  </Disclosure>
+      </div>
+    </template>
+  </UCollapsible>
 </template>

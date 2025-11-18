@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { MenuItem } from "@headlessui/vue";
 import type { RasterTileSource, StyleSpecification } from "maplibre-gl";
 
 type Basemap = {
@@ -11,7 +10,7 @@ type Basemap = {
 
 const store = useMapRef();
 const { data: generalSettingsData } = await useGeneralSettings();
-const { currentBasemap, setCurrentBaseMap, map, mapLoad } = store;
+const { setCurrentBaseMap, map, mapLoad } = store;
 const mapLayerStore = useMapLayer();
 const basemapList = ref<null | Basemap[]>(null);
 function isImgUrl(url: string) {
@@ -24,14 +23,7 @@ function isImgUrl(url: string) {
 }
 
 watchEffect(async () => {
-  const basemaps = [
-    {
-      name: "World Imagery",
-      url: `https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}`,
-      thumbnailUrl: `https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/tile/0/0/0`,
-      type: "raster",
-    },
-  ];
+  const basemaps = [];
   if (Array.isArray(generalSettingsData.value?.data.basemaps)) {
     for (const basemap of generalSettingsData.value.data.basemaps) {
       let item: Record<string, string> = {
@@ -66,6 +58,12 @@ watchEffect(async () => {
       basemaps.push(item as Basemap);
     }
   }
+  basemaps.push({
+    name: "World Imagery",
+    url: `https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}`,
+    thumbnailUrl: `https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/tile/0/0/0`,
+    type: "raster",
+  });
   basemapList.value = basemaps;
 });
 
@@ -76,7 +74,19 @@ const refreshActiveLayer = () => {
   }, 500);
 };
 
+const activeTiles = ref<string>("");
+
+onMounted(() => {
+  const source = store.map?.getSource("basemap-sources");
+  const basemapSource = source as maplibregl.RasterSourceSpecification;
+
+  if (basemapSource.tiles?.[0]) {
+    activeTiles.value = basemapSource.tiles[0];
+  }
+});
+
 const handleChangeBasemap = async (name: string, url: string, type: string) => {
+  activeTiles.value = url;
   if (map && mapLoad) {
     if (type === "raster") {
       map.setStyle({
@@ -137,25 +147,20 @@ const handleChangeBasemap = async (name: string, url: string, type: string) => {
 
 <template>
   <div v-for="basemap in basemapList" :key="basemap.name">
-    <MenuItem
-      v-slot="{ active }"
+    <button
       @click="handleChangeBasemap(basemap.name, basemap.url, basemap.type)"
+      :class="[
+        activeTiles === basemap.url && 'bg-grey-700',
+        'group flex w-full items-center gap-3 rounded-sm p-2 text-xs text-grey-200 hover:bg-grey-700 cursor-pointer',
+      ]"
     >
-      <button
-        :class="[
-          active ? 'bg-grey-700' : 'bg-transparent text-grey-200',
-          currentBasemap === basemap.name && 'bg-grey-700',
-          'group flex w-full items-center gap-3 rounded-xxs p-2 text-xs text-white',
-        ]"
-      >
-        <NuxtImg
-          width="64px"
-          height="64px"
-          class="rounded-xxs"
-          :src="basemap.thumbnailUrl"
-        />
-        {{ basemap.name }}
-      </button>
-    </MenuItem>
+      <NuxtImg
+        width="64px"
+        height="64px"
+        class="rounded-sm"
+        :src="basemap.thumbnailUrl"
+      />
+      {{ basemap.name }}
+    </button>
   </div>
 </template>

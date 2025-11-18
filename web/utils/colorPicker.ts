@@ -32,13 +32,13 @@ export function getRgb(color: string): ColorRGB {
 }
 
 export function parseColor(color: string): Color {
-  var hex = "";
-  var rgb = {
+  let hex = "";
+  let rgb: ColorRGB = {
     r: 0,
     g: 0,
     b: 0,
   };
-  var hsv = {
+  let hsv: ColorHSV = {
     h: 0,
     s: 0,
     v: 0,
@@ -62,7 +62,7 @@ export function parseColor(color: string): Color {
 }
 
 export function getSaturationCoordinates(color: Color): [number, number] {
-  const { s, v } = rgbToHsv(color.rgb);
+  const { s, v } = color.hsv;
 
   const x = s;
   const y = 100 - v;
@@ -79,35 +79,29 @@ export function getHueCoordinates(color: Color): number {
 }
 
 export function clamp(number: number, min: number, max: number): number {
-  if (!max) {
-    return Math.max(number, min) === min ? number : min;
-  } else if (Math.min(number, min) === number) {
-    return min;
-  } else if (Math.max(number, max) === number) {
-    return max;
-  }
-  return number;
+  return Math.min(Math.max(number, min), max);
 }
 
 //converter
-function baseTenToHex(c: Number) {
+function baseTenToHex(c: number): string {
   /**
    * I: A number
    * O: A string representation of the number in base 16
    */
-  let hex = c.toString(16);
-  return hex.length == 1 ? "0" + hex : hex;
+  const clamped = Math.round(clamp(c, 0, 255));
+  const hex = clamped.toString(16);
+  return hex.length === 1 ? "0" + hex : hex;
 }
 
 export function rgbToHex(color: ColorRGB): string {
-  let { r, g, b } = color;
+  const { r, g, b } = color;
   return "#" + baseTenToHex(r) + baseTenToHex(g) + baseTenToHex(b);
 }
 
 export function hexToRgb(color: string): ColorRGB {
-  var r = 0;
-  var g = 0;
-  var b = 0;
+  let r = 0;
+  let g = 0;
+  let b = 0;
 
   // 3 digits
   if (color.length === 4) {
@@ -130,7 +124,7 @@ export function hexToRgb(color: string): ColorRGB {
 }
 
 export function rgbToHsv(color: ColorRGB): ColorHSV {
-  var { r, g, b } = color;
+  let { r, g, b } = color;
   r /= 255;
   g /= 255;
   b /= 255;
@@ -152,7 +146,7 @@ export function rgbToHsv(color: ColorRGB): ColorHSV {
 }
 
 export function hsvToRgb(color: ColorHSV): ColorRGB {
-  var { h, s, v } = color;
+  let { h, s, v } = color;
   s /= 100;
   v /= 100;
 
@@ -163,9 +157,13 @@ export function hsvToRgb(color: ColorHSV): ColorRGB {
   const t = v * (1 - s * (1 - f));
   const index = i % 6;
 
-  const r = Math.round([v, q, p, p, t, v][index] * 255);
-  const g = Math.round([t, v, v, q, p, p][index] * 255);
-  const b = Math.round([p, p, t, v, v, q][index] * 255);
+  const rValues = [v, q, p, p, t, v];
+  const gValues = [t, v, v, q, p, p];
+  const bValues = [p, p, t, v, v, q];
+
+  const r = Math.round((rValues[index] ?? 0) * 255);
+  const g = Math.round((gValues[index] ?? 0) * 255);
+  const b = Math.round((bValues[index] ?? 0) * 255);
 
   return {
     r,

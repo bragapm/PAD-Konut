@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { TransitionRoot } from "@headlessui/vue";
-
 import IcHelp from "~/assets/icons/ic-help.svg";
 import IcSpinner from "~/assets/icons/ic-spinner.svg";
 import IcCheck from "~/assets/icons/ic-check.svg";
 import IcMapLayerA from "~/assets/icons/ic-map-layer-a.svg";
 import IcCross from "~/assets/icons/ic-cross.svg";
+import DummyImage from "@/assets/images/catalogue-item.jpeg";
 
 import type {
   VectorTiles,
@@ -61,40 +60,43 @@ const getImageUrl = (file: File) => {
 
 <template>
   <div
-    class="flex flex-col gap-2 border border-grey-700 rounded-xs p-2"
+    class="flex flex-col gap-2 border border-grey-700 rounded-lg p-2"
     @mouseover="hover = true"
     @mouseleave="hover = false"
   >
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-1">
-        <UBadge
-          :ui="{ rounded: 'rounded-xxs' }"
+        <!-- <UBadge
           variant="outline"
-          class="flex items-center gap-1 bg-grey-800 text-grey-50 mt-[1px]"
-          color="grey"
+          class="flex items-center gap-1 bg-grey-800 text-grey-50 mt-[1px] rounded-sm"
+          color="gray"
         >
           <IcMapLayerA></IcMapLayerA>
           <p>{{ item.geometry_type }}</p>
-        </UBadge>
-        <TransitionRoot
-          :show="isActive"
-          enter="transition-all duration-1000 ease-in-out"
-          enterFrom="transform opacity-0"
-          enterTo="transform opacity-100"
-          leave="transition-all duration-1000 ease-in-out"
-          leaveFrom="transform opacity-100"
-          leaveTo="transform opacity-0"
+        </UBadge> -->
+
+        <span
+          class="flex items-center gap-1 bg-grey-800 text-grey-50 mt-[1px] rounded-sm border border-grey-700 px-1 py-0.5 text-2xs"
         >
-          <UBadge
-            :ui="{ rounded: 'rounded-xxs' }"
-            variant="outline"
-            color="green"
-            class="gap-1 bg-grey-800"
+          <IcMapLayerA />
+          <p>{{ item.geometry_type }}</p>
+        </span>
+        <Transition
+          enter-active-class="transition-all duration-1000 ease-in-out"
+          enter-from-class="transform opacity-0"
+          enter-to-class="transform opacity-100"
+          leave-active-class="transition-all duration-1000 ease-in-out"
+          leave-from-class="transform opacity-100"
+          leave-to-class="transform opacity-0"
+        >
+          <span
+            v-if="isActive"
+            class="flex items-center gap-1 bg-grey-800 text-green-600 rounded-sm border border-green-600 px-1 py-0.5 text-2xs"
           >
-            <IcCheck></IcCheck>
+            <IcCheck />
             <p>In Map</p>
-          </UBadge>
-        </TransitionRoot>
+          </span>
+        </Transition>
       </div>
       <button v-if="item.source === 'loaded_geojson' && hover">
         <IcCross class="text-grey-50" @click="removeLoadedData(item)" />
@@ -104,18 +106,18 @@ const getImageUrl = (file: File) => {
       v-if="item.preview && item.source !== 'loaded_geojson'"
       provider="directus"
       :src="item.preview"
-      class="h-24 w-full object-cover object-center rounded-xxs"
+      class="h-24 w-full object-cover object-center rounded-sm"
     />
     <NuxtImg
       v-else-if="item.preview && item.source === 'loaded_geojson'"
       :src="getImageUrl(item.preview)"
-      class="h-24 w-full object-cover object-center rounded-xxs"
+      class="h-24 w-full object-cover object-center rounded-sm"
     />
     <img
       v-else
-      src="~/assets/images/catalogue-item.jpeg"
+      :src="DummyImage"
       alt="catalogue-item"
-      class="h-24 w-full object-cover object-center rounded-xxs"
+      class="h-24 w-full object-cover object-center rounded-sm"
     />
     <article>
       <div class="flex items-center justify-between gap-2">
@@ -133,14 +135,13 @@ const getImageUrl = (file: File) => {
       <p class="line-clamp-3 text-grey-500 text-2xs">Description</p>
     </article>
     <UButton
-      :ui="{ rounded: 'rounded-xxs' }"
       :label="isActive ? 'Remove' : 'Add to Map'"
       :class="[
         !isActive ? 'transition-all duration-500 ease-in-out' : '',
         'w-full justify-center h-9',
       ]"
       :variant="isActive ? 'outline' : 'solid'"
-      :color="isActive ? 'brand' : 'grey'"
+      :color="isActive ? 'brand' : 'gray'"
       @click="isActive ? removeLayer(item) : addLayer(item)"
     >
       <IcSpinner

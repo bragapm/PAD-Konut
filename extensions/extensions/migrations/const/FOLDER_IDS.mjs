@@ -6,3 +6,4 @@ export const RASTER_OVERLAYS_FOLDER_ID = "ffffffff-ffff-4fff-bfff-fffffffffffc";
 export const LAYER_DATA_FOLDER_ID = "ffffffff-ffff-4fff-bfff-fffffffffffb";
 export const BIM_DATA_FOLDER_ID = "ffffffff-ffff-4fff-bfff-fffffffffffa";
 export const LAYER_EXPORTS_FOLDER_ID = "ffffffff-ffff-4fff-bfff-fffffffffff9";
+export const COG_DATA_FOLDER_ID = "ffffffff-ffff-4fff-bfff-fffffffffff8";

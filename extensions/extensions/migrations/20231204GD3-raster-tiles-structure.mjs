@@ -1,7 +1,15 @@
-import { LAYER_PREVIEWS_FOLDER_ID } from "./const/FOLDER_IDS.mjs";
+import {
+  COG_DATA_FOLDER_ID,
+  LAYER_PREVIEWS_FOLDER_ID,
+} from "./const/FOLDER_IDS.mjs";
 
 export async function up(knex) {
   await knex.raw(`
+    INSERT INTO directus_folders(id,name)
+    VALUES
+      ('${COG_DATA_FOLDER_ID}','COG Data'),
+      ('${LAYER_PREVIEWS_FOLDER_ID}','Layer Previews');
+
     CREATE TABLE IF NOT EXISTS raster_tiles (
       layer_id uuid NOT NULL PRIMARY KEY,
       user_created uuid REFERENCES directus_users (id),
@@ -15,6 +23,8 @@ export async function up(knex) {
       protocol character varying(255) NOT NULL DEFAULT 'default',
       color_steps json,
       layer_alias character varying(255) NOT NULL,
+      cog_file uuid REFERENCES directus_files (id)
+        ON DELETE SET NULL,
       preview uuid REFERENCES directus_files (id)
         ON DELETE SET NULL,
       description text,
@@ -55,6 +65,7 @@ export async function up(knex) {
       ('raster_tiles','protocol',NULL,'select-dropdown','{"choices":[{"text":"default","value":"default"},{"text":"greyscale","value":"greyscale"}]}',NULL,NULL,false,false,NULL,'full',NULL,NULL,'[{"name":"Hide when terrain_rgb is true","rule":{"_and":[{"terrain_rgb":{"_eq":true}}]},"hidden":true,"options":{}}]',true,NULL,NULL,NULL),
       ('raster_tiles','color_steps','cast-json','list','{"fields":[{"field":"pixel_value","name":"pixel_value","type":"integer","meta":{"field":"pixel_value","type":"integer","required":true,"interface":"input"}},{"field":"color","name":"color","type":"string","meta":{"field":"color","type":"string","required":true,"interface":"select-color"}},{"field":"legend_label","name":"legend_label","type":"string","meta":{"field":"legend_label","type":"string","interface":"input"}}],"template":"{{ pixel_value }}: {{ color }} [{{ legend_label }}]"}',NULL,NULL,false,false,NULL,'full',NULL,NULL,'[{"name":"Hide if protocol is not greyscale","rule":{"_and":[{"protocol":{"_neq":"greyscale"}}]},"hidden":true,"options":{}}]',false,NULL,NULL,NULL),
       ('raster_tiles','layer_alias',NULL,'input',NULL,NULL,NULL,FALSE,FALSE,NULL,'full',NULL,NULL,NULL,TRUE,NULL,NULL,NULL),
+      ('raster_tiles','cog_file','file','file-image','{"folder":"${COG_DATA_FOLDER_ID}"}',NULL,NULL,FALSE,FALSE,NULL,'full',NULL,NULL,NULL,FALSE,NULL,NULL,NULL),
       ('raster_tiles','preview','file','file-image','{"folder":"${LAYER_PREVIEWS_FOLDER_ID}"}',NULL,NULL,FALSE,FALSE,NULL,'full',NULL,NULL,NULL,FALSE,NULL,NULL,NULL),
       ('raster_tiles','description',NULL,'input-multiline',NULL,NULL,NULL,false,false,NULL,'full',NULL,NULL,NULL,false,NULL,NULL,NULL),
       ('raster_tiles','category','m2o','select-dropdown-m2o','{"template":"{{category_name}}"}','related-values','{"template":"{{category_name}}"}',FALSE,FALSE,NULL,'full',NULL,NULL,NULL,FALSE,NULL,NULL,NULL),
@@ -72,6 +83,7 @@ export async function up(knex) {
       ('raster_tiles','user_created','directus_users',NULL,NULL,NULL,NULL,NULL,'nullify'),
       ('raster_tiles','user_updated','directus_users',NULL,NULL,NULL,NULL,NULL,'nullify'),
       ('raster_tiles','category','categories',NULL,NULL,NULL,NULL,NULL,'nullify'),
+      ('raster_tiles','cog_file','directus_files',NULL,NULL,NULL,NULL,NULL,'nullify'),
       ('raster_tiles','preview','directus_files',NULL,NULL,NULL,NULL,NULL,'nullify'),
       ('raster_tiles_directus_roles','directus_roles_id','directus_roles',NULL,NULL,NULL,'raster_tiles_layer_id',NULL,'nullify'),
       ('raster_tiles_directus_roles','raster_tiles_layer_id','raster_tiles','allowed_roles',NULL,NULL,'directus_roles_id',NULL,'delete');
@@ -89,5 +101,7 @@ export async function down(knex) {
     DROP TABLE IF EXISTS raster_tiles_directus_roles;
 
     DROP TABLE IF EXISTS raster_tiles;
+
+    DELETE FROM directus_folders WHERE id IN ('${COG_DATA_FOLDER_ID}','${LAYER_PREVIEWS_FOLDER_ID}');
   `);
 }

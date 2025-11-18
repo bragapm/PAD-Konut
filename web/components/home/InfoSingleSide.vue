@@ -8,7 +8,7 @@ defineProps<{
 
 <template>
   <div
-    class="grid grid-cols-1 md:grid-cols-2 gap-x-7 bg-grey-100 rounded-lg p-11"
+    class="grid grid-cols-1 md:grid-cols-2 gap-x-7 bg-grey-100 rounded-[20px] p-11"
   >
     <div class="flex flex-col justify-between gap-y-3">
       <div class="space-y-3">
@@ -20,8 +20,7 @@ defineProps<{
         <UButton
           v-if="item.button_text && item.button_url"
           color="brand"
-          :ui="{ rounded: 'rounded-[4px]' }"
-          class="p-3"
+          class="p-3 rounded-sm"
           :to="item.button_url"
           target="_blank"
         >
@@ -33,7 +32,7 @@ defineProps<{
       v-if="item.image"
       provider="directus"
       :src="item.image"
-      class="w-full h-[28rem] rounded-lg object-cover"
+      class="w-full h-[28rem] rounded-[20px] object-cover"
     />
   </div>
 </template>

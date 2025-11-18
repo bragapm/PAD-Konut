@@ -26,9 +26,10 @@ onMounted(() => {
       type="image/png"
       :href="`/panel/assets/${data?.data.public_favicon}`"
   /></Head>
-  <NuxtLayout v-if="!authStore.appLoad">
-    <NuxtPage />
-  </NuxtLayout>
+  <UApp>
+    <NuxtLayout v-if="!authStore.appLoad">
+      <NuxtPage />
+    </NuxtLayout>
+  </UApp>
   <!-- <NuxtWelcome /> -->
-  <UNotifications />
 </template>

@@ -67,77 +67,24 @@ const handleIntersect = async () => {
     <div class="space-y-1">
       <p class="text-2xs text-white">Create new features from</p>
       <USelectMenu
-        searchable
-        searchable-placeholder="Search Layer"
         v-model="selectedLayer"
-        :options="activeLayers"
-        :search-attributes="['layer_name', 'label']"
-        option-attribute="label"
+        :items="activeLayers"
         placeholder="Select layer"
-        color="gray"
-        :ui="{
-          rounded: 'rounded-xxs',
-        }"
-        :uiMenu="{
-          base: 'space-y-1',
-          rounded: 'rounded-xxs',
-          background: 'bg-grey-700',
-          ring: 'ring-1 ring-grey-600',
-          option: {
-            base: 'cursor-pointer hover:text-grey-700',
-            padding: 'px-1.5 py-1',
-            selected: 'bg-grey-200 text-grey-700',
-            color: 'text-grey-200',
-            rounded: 'rounded-xxs',
-            active: 'bg-grey-200 text-grey-700',
-            size: 'text-xs',
-          },
-          input: 'bg-grey-700 text-grey-200 text-xs',
-        }"
-        size="2xs"
+        size="sm"
       />
     </div>
     <div class="space-y-1">
       <p class="text-2xs text-white">Overlaps with</p>
       <USelectMenu
-        searchable
-        searchable-placeholder="Search Layer"
         v-model="overlapLayer"
-        :options="activeLayers"
-        :search-attributes="['layer_name', 'label']"
-        option-attribute="label"
+        :items="activeLayers"
         placeholder="Select layer"
-        color="gray"
-        :ui="{
-          rounded: 'rounded-xxs',
-        }"
-        :uiMenu="{
-          base: 'space-y-1',
-          rounded: 'rounded-xxs',
-          background: 'bg-grey-700',
-          ring: 'ring-1 ring-grey-600',
-          option: {
-            base: 'cursor-pointer hover:text-grey-700',
-            padding: 'px-1.5 py-1',
-            selected: 'bg-grey-200 text-grey-700',
-            color: 'text-grey-200',
-            rounded: 'rounded-xxs',
-            active: 'bg-grey-200 text-grey-700',
-            size: 'text-xs',
-          },
-          input: 'bg-grey-700 text-grey-200 text-xs',
-        }"
-        size="2xs"
+        size="sm"
       />
     </div>
     <div class="space-y-1">
       <p class="text-2xs text-white">Output Feature Class Name</p>
-      <UInput
-        v-model="outputLayer"
-        color="gray"
-        :ui="{ rounded: 'rounded-xxs' }"
-        size="2xs"
-      >
+       <UInput v-model="outputLayer" class="w-full" size="sm">
       </UInput>
     </div>
   </div>
@@ -145,8 +92,7 @@ const handleIntersect = async () => {
     <UButton
       @click="handleIntersect"
       color="brand"
-      :ui="{ rounded: 'rounded-[4px]' }"
-      class="w-full justify-center text-sm"
+      class="w-full justify-center text-sm rounded-sm"
       :loading="false"
       >Apply Intersect</UButton
     >

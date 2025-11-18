@@ -81,7 +81,7 @@ const findCoordinate = () => {
       title: "Invalid Input Coordinate",
       description: "Please provide correct input coordinate",
       icon: "i-heroicons-information-circle",
-      timeout: 1500,
+      duration: 1500,
     });
   }
 };
@@ -107,17 +107,17 @@ onUnmounted(() => {
       <UInput
         v-model="longitudeRef"
         color="gray"
-        :ui="{ rounded: 'rounded-xxs' }"
+        class="rounded-xl"
         placeholder="Longitude"
-        size="2xs"
+        size="xs"
       >
       </UInput>
       <UInput
         v-model="latitudeRef"
         color="gray"
-        :ui="{ rounded: 'rounded-xxs' }"
+        class="rounded-xl"
         placeholder="Latitude"
-        size="2xs"
+        size="xs"
       >
       </UInput>
     </div>
@@ -126,10 +126,9 @@ onUnmounted(() => {
     <UButton
       :disabled="!longitudeRef || !latitudeRef"
       @click="findCoordinate"
-      color="grey"
+      color="gray"
       variant="outline"
-      :ui="{ rounded: 'rounded-[4px]' }"
-      class="w-full justify-center text-sm"
+      class="w-full justify-center text-sm rounded-sm"
       >Search</UButton
     >
   </div>

@@ -36,10 +36,12 @@ const handleChangeProperty = (
 
 <template>
   <div>
-    <div class="bg-grey-800 rounded-xxs p-2 space-y-1">
-      <p class="text-grey-50 text-2xs">Appearance</p>
-      <div class="grid grid-cols-2 gap-1">
-        <p class="text-grey-400 text-2xs self-center">Size</p>
+    <div class="bg-grey-800 rounded p-2 flex flex-col gap-1">
+      <p class="text-grey-50 text-2xs font-medium leading-4">General</p>
+      <div class="flex gap-1 items-center w-full">
+        <p class="text-grey-400 text-2xs font-normal leading-4 w-16 shrink-0">
+          Size
+        </p>
         <UInput
           v-model="pointSize"
           @blur="
@@ -49,76 +51,70 @@ const handleChangeProperty = (
           "
           type="number"
           color="gray"
-          :ui="{ rounded: 'rounded-xxs' }"
           placeholder="Point Size"
-          size="2xs"
+          size="xs"
           min="0"
           max="100"
+          class="flex-1"
+          :ui="{ base: 'h-[26px] w-full' }"
         >
           <template #trailing>
-            <span class="text-grey-400 text-2xs">px</span>
+            <span class="text-grey-400 text-2xs leading-4">px</span>
           </template>
         </UInput>
       </div>
-    </div>
-    <div class="bg-grey-800 rounded-xxs p-2 space-y-1">
-      <p class="text-grey-50 text-2xs">Color</p>
-      <p class="text-grey-400 text-2xs">Point Color Opacity</p>
-      <div class="grid grid-cols-4 gap-1">
-        <URange
-          v-model="rangeValue"
-          @input="
-            (e:Event) => {
-              handleChangeProperty('3d',parseFloat((e.target as HTMLInputElement).value as string)/100, 'opacity');
+      <div class="flex gap-1 items-center w-full">
+        <p class="text-grey-400 text-2xs font-normal leading-4 w-16 shrink-0">
+          Opacity
+        </p>
+        <div class="w-full flex gap-1">
+          <USlider
+            v-model="rangeValue"
+            @update:modelValue="
+              (newValue) => {
+                handleChangeProperty('3d',(newValue as number)/100, 'opacity');
+              }
+            "
+            name="range"
+            size="xs"
+            color="gray"
+            :min="0"
+            :max="100"
+          />
+          <UInput
+            v-model="rangeValue"
+            @blur="
+               (e:Event) => {
+                handleChangeProperty('3d',parseFloat((e.target as HTMLInputElement).value as string)/100, 'opacity');
+              }
+            "
+            type="number"
+            color="gray"
+            placeholder="Point Opacity"
+            size="xs"
+            min="0"
+            max="100"
+            :ui="{ base: 'h-[26px] w-14' }"
+          >
+            <template #trailing>
+              <span class="text-grey-400 text-2xs">%</span>
+            </template>
+          </UInput>
+        </div>
+      </div>
+      <div class="flex gap-1 items-center w-full">
+        <p class="text-grey-400 text-2xs font-normal leading-4 w-16 shrink-0">
+          Color
+        </p>
+        <CoreInputColor
+          v-model="fillColor"
+          :updateColor="
+            (color:string) => {
+              handleChangeProperty('3d', color, 'point_color');
             }
           "
-          name="range"
-          size="sm"
-          :ui="{
-            background: 'bg-grey-800',
-            progress: { background: 'bg-grey-500 dark:bg-grey-400' },
-            thumb: {
-              background:
-                '[&::-webkit-slider-thumb]:bg-grey-400 [&::-webkit-slider-thumb]:dark:bg-grey-400',
-              ring: '[&::-webkit-slider-thumb]:ring-0 [&::-webkit-slider-thumb]:ring-current',
-            },
-            track: {
-              background:
-                '[&::-webkit-slider-runnable-track]:bg-grey-700 [&::-moz-range-track]:bg-grey-700 [&::-webkit-slider-runnable-track]:dark:bg-grey-700 [&::-moz-range-track]:dark:bg-grey-700',
-            },
-          }"
-          :min="0"
-          :max="100"
-          class="self-center col-span-3"
         />
-        <UInput
-          v-model="rangeValue"
-          @blur="
-             (e:Event) => {
-              handleChangeProperty('3d',parseFloat((e.target as HTMLInputElement).value as string)/100, 'opacity');
-            }
-          "
-          type="number"
-          color="gray"
-          :ui="{ rounded: 'rounded-xxs' }"
-          placeholder="Point Opacity"
-          size="2xs"
-          min="0"
-          max="100"
-        >
-          <template #trailing>
-            <span class="text-grey-400 text-2xs">%</span>
-          </template>
-        </UInput>
       </div>
-      <CoreInputColor
-        v-model="fillColor"
-        :updateColor="
-          (color:string) => {
-            handleChangeProperty('3d', color, 'point_color');
-          }
-        "
-      />
     </div>
   </div>
 </template>

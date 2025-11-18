@@ -35,12 +35,9 @@ onUnmounted(() => {
             directionProfile = option.id as DirectionProfile;
           }
         "
-        :color="directionProfile === option.id ? 'brand' : 'grey'"
+        :color="directionProfile === option.id ? 'brand' : 'gray'"
         variant="outline"
-        :ui="{
-          rounded: 'rounded-xxs',
-        }"
-        class="flex-1 text-2xs py-1 px-2 space-x-1 whitespace-nowrap"
+        class="flex-1 text-2xs py-1 px-2 space-x-1 whitespace-nowrap rounded-sm"
       >
         <template #leading>
           <component
@@ -80,8 +77,7 @@ onUnmounted(() => {
       "
       color="brand"
       variant="outline"
-      :ui="{ rounded: 'rounded-[4px]' }"
-      class="w-full justify-center text-sm"
+      class="w-full justify-center text-sm rounded-sm"
       >Reset</UButton
     >
     <UButton
@@ -92,8 +88,7 @@ onUnmounted(() => {
         }
       "
       color="brand"
-      :ui="{ rounded: 'rounded-[4px]' }"
-      class="w-full justify-center text-sm"
+      class="w-full justify-center text-sm rounded-sm"
       :loading="false"
       >Find Route</UButton
     >

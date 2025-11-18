@@ -1,35 +1,44 @@
 <script lang="ts" setup>
-import { useDrawControl } from "~/utils/useDrawControl";
-import { addHighlightLayer } from "~/utils";
+import { useTerraDrawControl } from "~/utils/useTerraDrawControl";
 import length from "@turf/length";
-
-const store = useMapRef();
 
 const lengthCount = ref<number>(0);
 const lengthUnit = ref<string>("m");
 
-const { drawer } = useDrawControl({
-  mode: "draw_line_string",
-  onCreated: (feature) => {
+const calculateLength = (feature: any) => {
+  if (feature && feature.geometry.type === "LineString") {
     lengthCount.value = parseFloat(
       length(feature, {
         units: lengthUnit.value === "m" ? "meters" : "kilometers",
       }).toFixed(2)
     );
+  }
+};
+
+const { initialize, clear, destroy } = useTerraDrawControl({
+  mode: "linestring",
+  onFinish: (_id, feature) => {
+    calculateLength(feature);
   },
-  onUpdated: (feature) => {
-    lengthCount.value = parseFloat(
-      length(feature, {
-        units: lengthUnit.value === "m" ? "meters" : "kilometers",
-      }).toFixed(2)
-    );
+  onChange: (_ids, features) => {
+    if (features.length > 0) {
+      calculateLength(features[0]);
+    }
   },
 });
+
+onMounted(() => {
+  initialize();
+});
+
 const handleReset = () => {
   lengthCount.value = 0;
-  drawer?.deleteAll();
-  drawer?.changeMode("draw_line_string");
+  clear();
 };
+
+onUnmounted(() => {
+  destroy();
+});
 </script>
 
 <template>
@@ -42,10 +51,9 @@ const handleReset = () => {
         v-model="lengthCount"
         readonly
         color="gray"
-        :ui="{ rounded: 'rounded-xxs' }"
         placeholder="0"
         class="w-full"
-        size="2xs"
+        size="xs"
       >
         <template #trailing>
           <span class="text-grey-500 dark:text-grey-400 text-xs"
@@ -62,10 +70,9 @@ const handleReset = () => {
             }
           }
         "
-        :color="lengthUnit === 'm' ? 'brand' : 'grey'"
+        :color="lengthUnit === 'm' ? 'brand' : 'gray'"
         variant="outline"
-        :ui="{ rounded: 'rounded-[4px]' }"
-        class="text-2xs p-1 gap-0"
+        class="text-2xs p-1 gap-0 rounded-sm"
       >
         Meter
       </UButton>
@@ -78,10 +85,9 @@ const handleReset = () => {
             }
           }
         "
-        :color="lengthUnit === 'km' ? 'brand' : 'grey'"
+        :color="lengthUnit === 'km' ? 'brand' : 'gray'"
         variant="outline"
-        :ui="{ rounded: 'rounded-[4px]' }"
-        class="text-2xs p-1 gap-0"
+        class="text-2xs p-1 gap-0 rounded-sm"
         >Kilometer</UButton
       >
     </div>
@@ -90,10 +96,9 @@ const handleReset = () => {
     <UButton
       :disabled="lengthCount === 0"
       @click="handleReset"
-      color="grey"
+      color="gray"
       variant="outline"
-      :ui="{ rounded: 'rounded-[4px]' }"
-      class="w-full justify-center text-sm"
+      class="w-full justify-center text-sm rounded-sm"
       >Reset</UButton
     >
   </div>

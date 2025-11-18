@@ -36,7 +36,7 @@ export async function up(knex) {
       v_timestamp := EXTRACT(EPOCH FROM v_now) * 1000;
 
       -- Set worker or actor name
-      IF NEW.format_file = 'tif' THEN
+      IF NEW.format_file IN ('tif','ecw') THEN
           IF NEW.is_terrain = TRUE AND terrain_rgb_enabled = FALSE THEN
               RAISE EXCEPTION 'Terrain RGB worker is not enabled';
           END IF;

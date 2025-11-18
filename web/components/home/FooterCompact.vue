@@ -15,7 +15,7 @@ const creditsWithReplacedYear = computed(() => {
 
 <template>
   <div
-    class="grid grid-cols-4 gap-x-6 bg-grey-800 rounded-lg p-11 text-grey-50"
+    class="grid grid-cols-4 gap-x-6 bg-grey-800 rounded-[20px] p-11 text-grey-50"
   >
     <h1 class="font-medium text-3xl">{{ item.title }}</h1>
     <p class="text-grey-400">{{ item.body }}</p>

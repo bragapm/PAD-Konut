@@ -34,7 +34,7 @@ def gdt_to_numpy_type(gdt):
             )
 
 
-def dem_to_terrain_rgb(bucket: str, object_key: str):
+def dem_to_terrain_rgb(bucket: str, object_key: str, output_dir: str):
     storage_root = (
         os.environ.get("STORAGE_S3_ROOT", "") + "/"
         if os.environ.get("STORAGE_S3_ROOT")
@@ -74,8 +74,6 @@ def dem_to_terrain_rgb(bucket: str, object_key: str):
             "Unsupported data. Data range (including NODATA value) must not exceeds 16777216"
         )
 
-    output_dir = generate_local_temp_dir_path(object_key)
-    os.mkdir(output_dir)
     output_path = os.path.join(output_dir, object_key)
 
     driver: gdal.Driver = gdal.GetDriverByName("GTiff")

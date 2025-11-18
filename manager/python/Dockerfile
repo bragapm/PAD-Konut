@@ -1,4 +1,4 @@
-FROM ghcr.io/osgeo/gdal:ubuntu-full-3.9.3
+FROM ghcr.io/osgeo/gdal:ubuntu-full-3.11.4
 
 # Install Poetry
 ENV POETRY_HOME=/opt/poetry \
@@ -6,8 +6,13 @@ ENV POETRY_HOME=/opt/poetry \
     POETRY_CACHE_DIR=/tmp/poetry_cache \
     POETRY_VIRTUALENVS_IN_PROJECT=1 \
     POETRY_VIRTUALENVS_OPTIONS_SYSTEM_SITE_PACKAGES=1
-RUN wget -O - https://install.python-poetry.org | python3 - --version 1.8.4
+RUN wget -O - https://install.python-poetry.org | python3 - --version 2.1.4
 ENV PATH=$POETRY_HOME/bin:$PATH
+
+# Add GDAL ECW plugin
+COPY bin/gdal_ECW_JP2ECW.so /usr/lib/x86_64-linux-gnu/gdalplugins/gdal_ECW_JP2ECW.so
+COPY bin/libNCSEcw.so /usr/local/lib/x86_64-linux-gnu/libNCSEcw.so
+RUN ldconfig
 
 WORKDIR /app
 

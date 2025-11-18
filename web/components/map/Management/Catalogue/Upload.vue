@@ -1,8 +1,4 @@
 <script lang="ts" setup>
-import { RadioGroup, RadioGroupOption } from "@headlessui/vue";
-import { TabGroup, TabList, Tab, TabPanels, TabPanel } from "@headlessui/vue";
-import IcMapLayerA from "~/assets/icons/ic-map-layer-a.svg";
-import IcMapLayerB from "~/assets/icons/ic-map-layer-b.svg";
 import Ic3d from "~/assets/icons/ic-3d.svg";
 import IcSpinner from "~/assets/icons/ic-spinner.svg";
 import IcCheck from "~/assets/icons/ic-check.svg";
@@ -28,30 +24,13 @@ const selectedFile = ref<File | null>(null);
 const thumbnailFile = ref<File | null>(null);
 
 const dataType = ref<string>("");
-const isTerrain = ref<boolean>(false);
-const hasColor = ref<boolean>(false);
-
-const selectedTab = ref(0);
+const isTerrain = ref<"true" | "false">("false");
+const hasColor = ref<"true" | "false">("false");
 
 const formatData = ref<string>("");
 
 const datasetName = ref<string>();
 const datasetDesc = ref<string>();
-
-function changeTab(index: number) {
-  selectedTab.value = index;
-}
-
-const handleBack = () => {
-  if (selectedTab.value !== 0) {
-    changeTab(selectedTab.value - 1);
-  }
-};
-const handleNext = () => {
-  if (selectedTab.value !== 2) {
-    changeTab(selectedTab.value + 1);
-  }
-};
 
 const uploadPreviewImg = async () => {
   const form = new FormData();
@@ -183,19 +162,50 @@ const vectorOptions = [
 
 const rasterOptions = [{ value: "tif", label: "tif" }];
 
-const nextDisabled = computed(() => {
-  return (
-    (selectedTab.value === 0 && !formatData.value) ||
-    (selectedTab.value === 1 && !selectedFile.value) ||
-    (selectedTab.value === 2 && !selectedFile.value)
-  );
-});
-
 watchEffect(() => {
   if (dataType.value) {
     formatData.value = "";
   }
 });
+
+const activeStep = ref(0);
+const nextDisabled = computed(() => {
+  return (
+    (activeStep.value === 0 && !formatData.value) ||
+    (activeStep.value === 1 && !selectedFile.value) ||
+    (activeStep.value === 2 && !selectedFile.value)
+  );
+});
+const items = computed<any[]>(() => {
+  return [
+    {
+      step: 1,
+      title: "Select Data Type & Format",
+      slot: "format" as const,
+      disabled: true,
+    },
+    {
+      step: 2,
+      title: "Select File",
+      slot: "file" as const,
+      disabled: true,
+    },
+    {
+      step: 3,
+      title: "Data Information",
+      slot: "info" as const,
+      disabled: true,
+    },
+  ];
+});
+const stepper = useTemplateRef("stepper");
+
+const handleBack = () => {
+  stepper.value?.prev();
+};
+const handleNext = () => {
+  stepper.value?.next();
+};
 </script>
 
 <template>
@@ -203,41 +213,37 @@ watchEffect(() => {
     <div
       class="w-full h-full border border-grey-700 py-10 px-5 overflow-y-auto"
     >
-      <div v-if="!uploading && !uploaded" class="m-auto max-w-3xl space-y-2">
+      <div v-if="!uploading && !uploaded" class="m-auto max-w-3xl">
         <p class="text-grey-50">Upload Data</p>
-        <TabGroup :selectedIndex="selectedTab" @change="changeTab" manual>
-          <TabList class="flex gap-3 justify-evenly mb-3">
-            <Tab
-              v-for="(item, index) in [
-                {
-                  step: 1,
-                  title: 'Select Data Type & Format',
-                  disabled: false,
-                },
-                { step: 2, title: 'Select File', disabled: !formatData },
-                {
-                  step: 3,
-                  title: 'Data Information',
-                  disabled: selectedTab === 0 || !selectedFile,
-                },
-              ]"
-              :disabled="item.disabled"
-              v-slot="{ selected }"
-              class="flex flex-col flex-1 text-grey-200 text-2xs"
+        <UStepper
+          ref="stepper"
+          v-model="activeStep"
+          :items="items"
+          :ui="{
+            separator: 'hidden',
+            trigger: 'w-full bg-transparent mb-5',
+            title: 'hidden',
+            description: 'hidden',
+            header: 'gap-3',
+          }"
+          class="my-8"
+        >
+          <template #indicator="{ item }">
+            <div
+              class="flex flex-col flex-1 text-grey-200 text-2xs cursor-pointer"
             >
               <p>{{ item.step }}</p>
               <p>{{ item.title }}</p>
               <div
                 :class="[
-                  selected ? 'bg-brand-500' : 'bg-grey-400',
-                  'h-[2px] w-full rounded-lg mt-2',
+                  item.step - 1 <= activeStep ? 'bg-brand-500' : 'bg-grey-400',
+                  ' h-[2px] w-full rounded-[20px] mt-2',
                 ]"
               />
-            </Tab>
-          </TabList>
-          <hr class="border-grey-700" />
-          <TabPanels>
-            <TabPanel class="space-y-3">
+            </div>
+          </template>
+          <template #format>
+            <div class="space-y-3">
               <p class="text-sm text-grey-400">
                 Upload to Default Data Catalogue
               </p>
@@ -250,50 +256,77 @@ watchEffect(() => {
               </p>
               <div class="flex flex-col gap-3">
                 <p class="text-sm text-grey-400">Data Type</p>
-                <RadioGroup v-model="dataType">
-                  <div class="grid grid-cols-3 gap-3">
-                    <MapManagementCatalogueUploadTypeCard
-                      :icon="Ic3d"
-                      desc=".laz"
-                      optLabel="Three Dimensions"
-                      optValue="3d"
-                    />
-                    <MapManagementCatalogueUploadTypeCard
-                      :icon="IcMapLayerA"
-                      desc=".shp, .geojson, .kml, .gdb, .csv, .xlsx"
-                      optLabel="Vector"
-                      optValue="vector"
-                    />
-                    <MapManagementCatalogueUploadTypeCard
-                      :icon="IcMapLayerB"
-                      desc=".tif"
-                      optLabel="Raster"
-                      optValue="raster"
-                    />
+                <div class="grid grid-cols-3 gap-3">
+                  <div
+                    v-for="item in [
+                      {
+                        icon: Ic3d,
+                        desc: '.laz',
+                        optLabel: 'Three Dimensions',
+                        optValue: '3d',
+                      },
+                      {
+                        icon: Ic3d,
+                        desc: '.shp, .geojson, .kml, .gdb, .csv, .xlsx',
+                        optLabel: 'Vector',
+                        optValue: 'vector',
+                      },
+                      {
+                        icon: Ic3d,
+                        desc: '.tif',
+                        optLabel: 'Raster',
+                        optValue: 'raster',
+                      },
+                    ]"
+                    @click="dataType = item.optValue"
+                    :class="[
+                      dataType === item.optValue
+                        ? 'border-brand-500'
+                        : 'border-grey-700',
+                      'flex flex-col gap-1 justify-between p-4 bg-grey-800 border rounded-lg h-full cursor-pointer',
+                    ]"
+                  >
+                    <div class="flex flex-col items-center py-6">
+                      <component
+                        :is="item.icon"
+                        class="w-6 h-6 text-brand-500"
+                        :fontControlled="false"
+                      ></component>
+                      <p class="text-grey-50 mt-2">{{ item.optLabel }}</p>
+                      <p class="text-sm text-grey-400 text-center">
+                        {{ item.desc }}
+                      </p>
+                    </div>
                   </div>
-                </RadioGroup>
+                </div>
               </div>
               <div class="w-48">
-                <CoreSelect
+                <USelect
+                  v-model="formatData"
                   :disabled="!dataType"
                   placeholder="Data Format"
-                  :value="formatData"
-                  :options="
+                  :items="
                     dataType === '3d'
                       ? threedOptions
                       : dataType === 'vector'
                       ? vectorOptions
                       : rasterOptions
                   "
-                  @handle-change="
-                    (value:string) => {
-                      formatData = value
-                    }
-                  "
-                />
+                  class="text-xs text-grey-200 h-[34px] w-40"
+                  color="gray"
+                  variant="outline"
+                  :ui="{
+                    base: ['hover:bg-grey-800'],
+                    content: 'bg-grey-800 ring-grey-700',
+                    itemTrailingIcon: 'text-brand-500',
+                    item: ['text-xs'],
+                  }"
+                ></USelect>
               </div>
-            </TabPanel>
-            <TabPanel class="space-y-3">
+            </div>
+          </template>
+          <template #file>
+            <div class="space-y-3">
               <p class="text-sm text-grey-400">Upload Data</p>
               <MapManagementCatalogueLoadFileInput
                 title="File"
@@ -328,86 +361,60 @@ watchEffect(() => {
               />
               <div v-if="dataType === 'raster'" class="space-y-3">
                 <p class="text-sm text-grey-400">Is Terrain</p>
-                <RadioGroup
-                  v-model="isTerrain"
-                  class="flex gap-2 w-full bg-grey-800 border border-grey-700 rounded-xs p-2"
+                <div
+                  class="flex gap-2 w-full bg-grey-800 border border-grey-700 rounded-lg p-2"
                 >
-                  <RadioGroupOption
-                    v-for="(item, index) in [
-                      { value: true, label: 'Yes' },
-                      { value: false, label: 'No' },
+                  <URadioGroup
+                    v-model="isTerrain"
+                    orientation="horizontal"
+                    variant="card"
+                    default-value="true"
+                    :items="[
+                      { label: 'Yes', value: 'true' },
+                      { label: 'No', value: 'false' },
                     ]"
-                    v-slot="{ checked }"
-                    :value="item.value"
                     class="w-full"
-                  >
-                    <div
-                      :class="[
-                        checked ? 'bg-brand-950' : '',
-                        'flex gap-2 hover:bg-brand-950 p-2 rounded-xxs text-2xs text-grey-50 cursor-pointer',
-                      ]"
-                    >
-                      <div
-                        :class="[
-                          checked
-                            ? 'border-brand-500'
-                            : 'border-grey-600 bg-grey-700',
-                          ,
-                          'flex items-center justify-center w-4 h-4 border  rounded-full',
-                        ]"
-                      >
-                        <div
-                          v-if="checked"
-                          class="w-3 h-3 border-2 border-brand-500 rounded-full"
-                        ></div>
-                      </div>
-                      <p>{{ item.label }}</p>
-                    </div>
-                  </RadioGroupOption>
-                </RadioGroup>
+                    :ui="{
+                      container: '',
+                      base: 'flex items-center justify-center size-4',
+                      indicator: 'size-2 rounded-full after:bg-transparent',
+                      item: 'w-full items-center',
+                      label: 'text-2xs text-grey-50 font-normal',
+                    }"
+                    size="xs"
+                  />
+                </div>
               </div>
               <div v-if="dataType === '3d'" class="space-y-3">
                 <p class="text-sm text-grey-400">Has Color</p>
-                <RadioGroup
-                  v-model="hasColor"
-                  class="flex gap-2 w-full bg-grey-800 border border-grey-700 rounded-xs p-2"
+                <div
+                  class="flex gap-2 w-full bg-grey-800 border border-grey-700 rounded-lg p-2"
                 >
-                  <RadioGroupOption
-                    v-for="(item, index) in [
-                      { value: true, label: 'Yes' },
-                      { value: false, label: 'No' },
+                  <URadioGroup
+                    v-model="hasColor"
+                    orientation="horizontal"
+                    variant="card"
+                    default-value="true"
+                    :items="[
+                      { label: 'Yes', value: 'true' },
+                      { label: 'No', value: 'false' },
                     ]"
-                    v-slot="{ checked }"
-                    :value="item.value"
                     class="w-full"
-                  >
-                    <div
-                      :class="[
-                        checked ? 'bg-brand-950' : '',
-                        'flex gap-2 hover:bg-brand-950 p-2 rounded-xxs text-2xs text-grey-50 cursor-pointer',
-                      ]"
-                    >
-                      <div
-                        :class="[
-                          checked
-                            ? 'border-brand-500'
-                            : 'border-grey-600 bg-grey-700',
-                          ,
-                          'flex items-center justify-center w-4 h-4 border  rounded-full',
-                        ]"
-                      >
-                        <div
-                          v-if="checked"
-                          class="w-3 h-3 border-2 border-brand-500 rounded-full"
-                        ></div>
-                      </div>
-                      <p>{{ item.label }}</p>
-                    </div>
-                  </RadioGroupOption>
-                </RadioGroup>
+                    :ui="{
+                      container: '',
+                      base: 'flex items-center justify-center size-4',
+                      indicator: 'size-2 rounded-full after:bg-transparent',
+                      item: 'w-full items-center',
+                      label: 'text-2xs text-grey-50 font-normal',
+                    }"
+                    size="xs"
+                  />
+                </div>
               </div>
-            </TabPanel>
-            <TabPanel class="space-y-3">
+            </div>
+          </template>
+          <template #info>
+            <div class="space-y-3">
               <p class="text-sm text-grey-400">Dataset Information</p>
               <MapManagementCatalogueLoadFileInput
                 allowed-desc="(Supported File Type: .PNG, .JPEG, .JPG)"
@@ -425,7 +432,7 @@ watchEffect(() => {
                   v-model="datasetName"
                   type="text"
                   id="floating_filled"
-                  class="block rounded-xxs px-2.5 pb-2.5 pt-5 w-full text-sm text-grey-200 bg-grey-700 border border-grey-600 appearance-none focus:outline-none focus:ring-0 focus:border-grey-600 peer"
+                  class="block rounded-sm px-2.5 pb-2.5 pt-5 w-full text-sm text-grey-200 bg-grey-700 border border-grey-600 appearance-none focus:outline-none focus:ring-0 focus:border-grey-600 peer"
                   placeholder=" "
                 />
                 <label
@@ -441,7 +448,7 @@ watchEffect(() => {
                   type="text"
                   rows="5"
                   id="floating_filled"
-                  class="block rounded-xxs px-2.5 pb-2.5 pt-5 w-full text-sm text-grey-200 bg-grey-700 border border-grey-600 appearance-none focus:outline-none focus:ring-0 focus:border-grey-600 peer"
+                  class="block rounded-sm px-2.5 pb-2.5 pt-5 w-full text-sm text-grey-200 bg-grey-700 border border-grey-600 appearance-none focus:outline-none focus:ring-0 focus:border-grey-600 peer"
                   placeholder=" "
                 />
                 <label
@@ -451,9 +458,9 @@ watchEffect(() => {
                   Dataset Description
                 </label>
               </div>
-            </TabPanel>
-          </TabPanels>
-        </TabGroup>
+            </div>
+          </template>
+        </UStepper>
       </div>
       <div
         v-else-if="uploading"
@@ -486,7 +493,7 @@ watchEffect(() => {
               emit('handleSuccess');
             }
           "
-          :ui="{ rounded: 'rounded-[4px]' }"
+          class="rounded-sm"
           color="brand"
           >Go To Catalogue</UButton
         >
@@ -495,31 +502,28 @@ watchEffect(() => {
     <div v-if="!uploading && !uploaded" class="flex justify-between">
       <UButton
         @click="cancel"
-        :ui="{ rounded: 'rounded-xs' }"
         label="Cancel"
         variant="outline"
         color="brand"
-        class="w-44 text-sm justify-center"
+        class="w-44 text-sm justify-center rounded-lg"
       >
       </UButton>
       <div class="space-x-2">
         <UButton
-          :disabled="selectedTab === 0"
+          :disabled="activeStep === 0"
           @click="handleBack"
-          :ui="{ rounded: 'rounded-xs' }"
           label="Back"
           variant="outline"
-          :color="selectedTab === 0 ? 'grey' : 'brand'"
-          class="w-44 text-sm justify-center"
+          :color="activeStep === 0 ? 'gray' : 'brand'"
+          class="w-44 text-sm justify-center rounded-lg"
         >
         </UButton>
         <UButton
           :disabled="nextDisabled"
-          @click="selectedTab === 2 && selectedFile ? upload() : handleNext()"
-          :ui="{ rounded: 'rounded-xs' }"
-          :label="selectedTab === 2 ? 'Upload Data' : 'Next'"
-          :color="nextDisabled ? 'grey' : 'brand'"
-          class="w-44 text-sm justify-center"
+          @click="activeStep === 2 && selectedFile ? upload() : handleNext()"
+          :label="activeStep === 2 ? 'Upload Data' : 'Next'"
+          :color="nextDisabled ? 'gray' : 'brand'"
+          class="w-44 text-sm justify-center rounded-lg"
         >
         </UButton>
       </div>

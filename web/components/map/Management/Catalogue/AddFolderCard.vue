@@ -8,7 +8,7 @@ const addNewFolder = () => {
 
 <template>
   <div
-    class="flex flex-col justify-between gap-2 border border-grey-700 bg-grey-800 rounded-xs p-2 h-64"
+    class="flex flex-col justify-between gap-2 border border-grey-700 bg-grey-800 rounded-lg p-2 h-64"
   >
     <div class="flex flex-col flex-1 items-center justify-center py-8 gap-3">
       <IcFileSort class="h-6 w-6 text-brand-500" :fontControlled="false" />
@@ -19,9 +19,8 @@ const addNewFolder = () => {
         </p>
       </div>
       <UButton
-        :ui="{ rounded: 'rounded-xxs' }"
         label="New Folder"
-        class="h-9 justify-between gap-10"
+        class="h-9 justify-between gap-10 rounded-xl"
         variant="outline"
         color="brand"
         @click="addNewFolder"

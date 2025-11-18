@@ -15,7 +15,7 @@ const emit = defineEmits<{
 <template>
   <div
     @click="emit('changeMode')"
-    class="flex flex-col h-full gap-1 justify-between p-4 bg-grey-800 border rounded-xs cursor-pointer border-grey-700"
+    class="flex flex-col h-full gap-1 justify-between p-4 bg-grey-800 border rounded-lg cursor-pointer border-grey-700"
   >
     <div class="flex flex-col items-center py-6">
       <IcAddFile class="w-6 h-6 text-brand-500" :fontControlled="false" />

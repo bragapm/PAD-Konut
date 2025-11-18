@@ -168,6 +168,8 @@ const applyFilter = (data: LayerLists[]) => {
 watchEffect(async () => {
   if (props.catalogueData.length > 0) {
     applyFilter(props.catalogueData);
+  } else {
+    filteredData.value = [];
   }
 });
 </script>
@@ -197,18 +199,10 @@ watchEffect(async () => {
       <UInput
         :disabled="isOption"
         v-model="searchRef"
-        color="gray"
-        :ui="{ rounded: 'rounded-xxs' }"
         placeholder="Search Dataset"
+        trailing-icon="i-heroicons-magnifying-glass"
+        variant="subtle"
       >
-        <template #trailing>
-          <UButton
-            color="grey"
-            variant="link"
-            icon="i-heroicons-magnifying-glass-20-solid"
-            :padded="false"
-          />
-        </template>
       </UInput>
     </div>
     <MapManagementCatalogueHeader
@@ -256,30 +250,15 @@ watchEffect(async () => {
           <div
             v-for="i of [0, 1, 2, 3, 4]"
             :key="i"
-            class="flex flex-col gap-2 border border-grey-700 rounded-xs p-2"
+            class="flex flex-col gap-2 border border-grey-700 rounded-lg p-2"
           >
-            <USkeleton
-              :ui="{ background: 'bg-grey-800', rounded: 'rounded-xxs' }"
-              class="h-6 w-1/4"
-            />
-            <USkeleton
-              :ui="{ background: 'bg-grey-800', rounded: 'rounded-xxs' }"
-              class="h-24 w-full"
-            />
+            <USkeleton class="h-6 w-1/4" />
+            <USkeleton class="h-24 w-full" />
             <div class="flex flex-col gap-2">
-              <USkeleton
-                :ui="{ background: 'bg-grey-800' }"
-                class="h-3 w-1/3"
-              />
-              <USkeleton
-                :ui="{ background: 'bg-grey-800' }"
-                class="h-3 w-2/3"
-              />
+              <USkeleton class="h-3 w-1/3" />
+              <USkeleton class="h-3 w-2/3" />
             </div>
-            <USkeleton
-              :ui="{ background: 'bg-grey-800', rounded: 'rounded-xxs' }"
-              class="w-full h-9"
-            />
+            <USkeleton class="w-full h-9" />
           </div>
         </div>
       </div>

@@ -28,7 +28,7 @@ const bgImgUrl = computed(
 <template>
   <div
     :class="[
-      'grid grid-cols-1 md:grid-cols-2 gap-7 rounded-lg bg-cover bg-center',
+      'grid grid-cols-1 md:grid-cols-2 gap-7 rounded-[20px] bg-cover bg-center',
       item.variant === 'image_bg_text_card' ? 'p-6' : 'p-11',
       item.variant === 'image_card' && 'bg-grey-100',
     ]"
@@ -38,7 +38,7 @@ const bgImgUrl = computed(
       :class="[
         'flex flex-col gap-3 p-6',
         item.variant === 'image_bg_text_card' &&
-          'bg-grey-800 text-grey-50 rounded-lg',
+          'bg-grey-800 text-grey-50 rounded-[20px]',
       ]"
     >
       <p class="font-medium text-lg">{{ item.subtitle }}</p>
@@ -54,8 +54,7 @@ const bgImgUrl = computed(
         <UButton
           v-if="item.primary_button_text && item.primary_button_url"
           color="brand"
-          :ui="{ rounded: 'rounded-[4px]' }"
-          class="p-3"
+          class="p-3 rounded-sm"
           :to="item.primary_button_url"
           target="_blank"
         >
@@ -65,8 +64,7 @@ const bgImgUrl = computed(
           v-if="item.secondary_button_text && item.secondary_button_url"
           color="brand"
           variant="outline"
-          :ui="{ rounded: 'rounded-[4px]' }"
-          class="p-3"
+          class="p-3 rounded-sm"
           :to="item.secondary_button_url"
           target="_blank"
         >
@@ -76,7 +74,7 @@ const bgImgUrl = computed(
     </div>
     <div
       v-if="item.variant === 'image_card'"
-      class="w-full h-full rounded-lg bg-cover bg-center"
+      class="w-full h-full rounded-[20px] bg-cover bg-center"
       :style="`background-image: ${bgImgUrl}`"
     />
   </div>

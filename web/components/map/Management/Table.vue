@@ -1,15 +1,19 @@
 <script setup lang="ts">
 import { useQuery, useInfiniteQuery } from "@tanstack/vue-query";
-import type { GeoJSONSource, LngLatBoundsLike } from "maplibre-gl";
+import { onRowClick } from "~/utils/table";
 import IcCross from "~/assets/icons/ic-cross.svg";
 import IcDownload from "~/assets/icons/ic-download.svg";
 import IcExpand from "~/assets/icons/ic-expand.svg";
 import IcFilter from "~/assets/icons/ic-filter.svg";
-import IcShrink from "~/assets/icons/ic-shrink.svg";
 import IcSort from "~/assets/icons/ic-sort.svg";
-import bbox from "@turf/bbox";
-import { Menu, MenuButton, MenuItems, MenuItem } from "@headlessui/vue";
+import IcArrowReg from "~/assets/icons/ic-arrow-reg.svg";
 import { capitalizeEachWords } from "~/utils";
+import { provide } from "vue";
+
+const props = defineProps<{
+  activeCollection: string;
+  layerId: string;
+}>();
 
 export type HeaderData = {
   field: string;
@@ -19,25 +23,47 @@ export type HeaderData = {
 type Columns = { key: string; label: string; type: string };
 
 const store = useTableData();
-const { toggleTable, toggleFullscreen } = store;
+const { closeTable, toggleFullscreen, setActiveTable, removeActiveTableByKey } =
+  store;
+const { activeTableList, activeTable } = storeToRefs(store);
 
-const selectedIds = ref<string[]>([]);
-const highlightedIds = ref<string[]>([]);
+const mapStore = useMap();
+const { removeHighlightedLayer, removeAllHighlightedLayer } = mapStore;
+const { highlightedLayers } = storeToRefs(mapStore);
 
+const mapRefStore = useMapRef();
+
+const mapLayerStore = useMapLayer();
+const { groupedActiveLayers } = storeToRefs(mapLayerStore);
+
+const authStore = useAuth();
+
+//  {
+//     headers: { Authorization: "Bearer " + authStore.accessToken },
+//   }
 const {
   data: headerData,
   error: headerError,
   isFetching: isHeaderFetching,
   isError: isHeaderError,
 } = useQuery({
-  queryKey: [
-    `/panel/vector-tiles-attribute-table-header/`,
-    store.activeCollection,
-  ],
-  queryFn: ({ queryKey }) =>
-    $fetch<{
-      data: HeaderData[];
-    }>(queryKey[0] + queryKey[1]!).then((r) => r.data),
+  queryKey: [props.activeCollection],
+  queryFn: async ({ queryKey }) => {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+
+    if (authStore.accessToken) {
+      headers["Authorization"] = `Bearer ${authStore.accessToken}`;
+    }
+
+    const res = await $fetch<{ data: HeaderData[] }>(
+      `/panel/vector-tiles-attribute-table-header/${props.activeCollection}`,
+      { headers }
+    );
+
+    return res.data;
+  },
 });
 
 const columns = computed<
@@ -59,8 +85,6 @@ const columns = computed<
 });
 
 const sortBy = ref("");
-const filterStore = useFilter();
-const { filterParams } = storeToRefs(filterStore);
 
 const {
   data: countData,
@@ -68,16 +92,24 @@ const {
   isFetching: isCountFetching,
   isError: isCountError,
 } = useQuery({
-  queryKey: ["count_table_data_query_key"],
+  queryKey: ["count_table_data_query_key", props.layerId],
   queryFn: async ({ queryKey }) => {
     const queryParams: Record<string, string> = {
       filter: JSON.stringify({
         _and: filterParams.value || [],
       }),
     };
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+
+    if (authStore.accessToken) {
+      headers["Authorization"] = `Bearer ${authStore.accessToken}`;
+    }
     const r = await $fetch<{ data: { count: number }[] }>(
-      `/panel/items/${store.activeCollection}?aggregate[count]=*&` +
-        new URLSearchParams(queryParams)
+      `/panel/items/${props.activeCollection}?aggregate[count]=*&` +
+        new URLSearchParams(queryParams),
+      { headers }
     ).then((r) => r.data[0].count);
 
     return r;
@@ -93,7 +125,7 @@ const {
   isFetching: isTableFetching,
   refetch,
 } = useInfiniteQuery({
-  queryKey: ["table_data_query_key"],
+  queryKey: ["table_data_query_key", props.layerId],
   queryFn: async ({ pageParam = 1, queryKey }) => {
     const queryParams: Record<string, string> = {
       limit: "25",
@@ -102,7 +134,7 @@ const {
         fields: headerData.value
           .filter((el: HeaderData) => el.type !== "geometry")
           .map((el: HeaderData) => el.field)
-          .concat("ogc_fid")
+          .concat("ogc_fid,geom")
           .join(","),
       }),
       ...(filterParams.value && {
@@ -112,9 +144,19 @@ const {
       }),
       sort: sortBy.value,
     };
+
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+
+    if (authStore.accessToken) {
+      headers["Authorization"] = `Bearer ${authStore.accessToken}`;
+    }
+
     const r = await $fetch<{ data: any[] }>(
-      `/panel/items/${store.activeCollection}?` +
-        new URLSearchParams(queryParams)
+      `/panel/items/${props.activeCollection}?` +
+        new URLSearchParams(queryParams),
+      { headers }
     );
     return r.data;
   },
@@ -127,65 +169,11 @@ const {
   },
 });
 
-const isAllChecked = ref(false);
-
-const onRowClick = (fid: string) => {
-  if (highlightedIds.value.includes(fid as string))
-    highlightedIds.value = highlightedIds.value.filter((e) => e !== fid);
-  else highlightedIds.value = [...highlightedIds.value, fid as string];
-};
-
-const onRowSelect = (fid: string) => {
-  if (selectedIds.value.includes(fid as string))
-    selectedIds.value = selectedIds.value.filter((e) => e !== fid);
-  else {
-    selectedIds.value = [...selectedIds.value, fid as string];
-    if (!isAllChecked.value && !highlightedIds.value.includes(fid as string))
-      highlightedIds.value = [...highlightedIds.value, fid as string];
-  }
-};
-
-const mapRefStore = useMapRef();
-const debouncedMapHighlight = debounce(async (newValue: string[]) => {
-  if (!newValue.length) {
-    if (mapRefStore.map?.getSource("highlight")) {
-      (mapRefStore.map.getSource("highlight") as GeoJSONSource).setData(
-        emptyFeatureCollection
-      );
-      pauseAllAnimation();
-    }
-  } else {
-    const queryParams: Record<string, string> = {
-      fields: "geom",
-      "filter[ogc_fid][_in]": newValue.join(","),
-    };
-    const { data } = await $fetch<{ data: any }>(
-      `/panel/items/${store.activeCollection}?` +
-        new URLSearchParams(queryParams)
-    );
-    showHighlightLayer(mapRefStore.map!, data, store.activeCollection!, true);
-    mapRefStore.map!.fitBounds(
-      bbox({
-        type: "FeatureCollection",
-        features: data.map(({ geom }: { geom: GeoJSON.Geometry }) => ({
-          type: "Feature",
-          geometry: geom,
-        })),
-      } as GeoJSON.FeatureCollection) as LngLatBoundsLike,
-      {
-        padding: {
-          top: 80,
-          bottom: 20,
-          left: window.innerWidth * 0.49,
-          right: 20,
-        },
-      }
-    );
-  }
-}, 2000);
-watch(highlightedIds, debouncedMapHighlight, {
-  immediate: true,
-});
+const isAllChecked = ref(
+  highlightedLayers.value[props.layerId]
+    ? highlightedLayers.value[props.layerId]["highlightedAll"]
+    : false
+);
 
 const toast = useToast();
 watchEffect(() => {
@@ -213,17 +201,19 @@ const handleScroll = (event: Event) => {
 
 const downloadData = async () => {
   const queryString = new URLSearchParams({
-    ...(selectedIds.value.length > 0 && {
+    ...(highlightedLayers.value?.[props.layerId]?.["ids"]?.length > 0 && {
       filter: JSON.stringify({
-        ogc_fid: { [!isAllChecked.value ? "_in" : "_nin"]: selectedIds.value },
+        ogc_fid: {
+          [!isAllChecked.value ? "_in" : "_nin"]:
+            highlightedLayers.value[props.layerId]["ids"],
+        },
       }),
     }),
     export: "csv",
   });
-
   try {
     const response = await fetch(
-      `/panel/items/${store.activeCollection}?${queryString}`,
+      `/panel/items/${props.activeCollection}?${queryString}`,
       {
         method: "GET",
       }
@@ -231,7 +221,7 @@ const downloadData = async () => {
     const resData = await response.blob();
     let anchor = document.createElement("a");
     const href = window.URL.createObjectURL(resData);
-    anchor.download = store.activeCollection!;
+    anchor.download = props.activeCollection!;
     anchor.href = href;
     anchor.click();
     window.URL.revokeObjectURL(href);
@@ -246,6 +236,8 @@ const downloadData = async () => {
 };
 
 const hiddenFields = ref<string[]>([]);
+const showFieldOpen = ref(false);
+const columnPopoverOpen = ref<Record<string, boolean>>({});
 
 const isOpen = ref(false);
 
@@ -255,168 +247,349 @@ function closeModal() {
 function openModal() {
   isOpen.value = true;
 }
+
+const filterStore = useFilter();
+const { removeFilterListByKey, resetFilterList } = filterStore;
+const { filterArrayList, filterParamsList } = storeToRefs(filterStore);
+
+const filterArray = ref<(FilterItem | GroupItem)[]>(
+  filterArrayList.value[props.layerId] || []
+);
+const filterParams = ref<FilterParams[] | null>(
+  filterParamsList.value[props.layerId] || null
+);
+
+function setFilterParams(value: FilterParams[] | null) {
+  filterParams.value = value;
+}
+
+function resetFilter() {
+  filterArray.value = [];
+  filterParams.value = null;
+}
+
+function addFilter() {
+  let current = JSON.parse(JSON.stringify(filterArray.value));
+  filterArray.value = [
+    ...current,
+    { id: crypto.randomUUID(), field: "", operator: "", value: "" },
+  ];
+}
+
+function addGroup(group: LogicalOperator) {
+  let current = JSON.parse(JSON.stringify(filterArray.value));
+  filterArray.value = [
+    ...current,
+    { id: crypto.randomUUID(), group: group, filter: [] },
+  ];
+}
+
+function updateFilter(id: string, newValue: FilterItem) {
+  const current = [...JSON.parse(JSON.stringify(filterArray.value))];
+  const path = findPathById(current, id);
+
+  updateByPath(current, path, newValue);
+  filterArray.value = current;
+}
+
+function updateGroup(id: string, newValue: LogicalOperator) {
+  const current = [...JSON.parse(JSON.stringify(filterArray.value))];
+  const path = findPathById(current, id);
+  updateGroupByPath(current, path, newValue);
+  filterArray.value = current;
+}
+
+function insertFilter(id: string) {
+  let current = JSON.parse(JSON.stringify(filterArray.value));
+  const path = findPathById(current, id);
+  insertByPath(current, path, {
+    id: crypto.randomUUID(),
+    field: "",
+    operator: "",
+    value: "",
+  });
+  filterArray.value = current;
+}
+
+function insertGroup(id: string, group: LogicalOperator) {
+  let current = JSON.parse(JSON.stringify(filterArray.value));
+  const path = findPathById(current, id);
+  insertByPath(current, path, {
+    id: crypto.randomUUID(),
+    group: group,
+    filter: [],
+  });
+  filterArray.value = current;
+}
+
+function deleteById(id: string) {
+  const current = [...JSON.parse(JSON.stringify(filterArray.value))];
+  const path = findPathById(current, id);
+  const deleted = deleteByPath(current, path);
+  filterArray.value = deleted;
+}
+
+const filterProps = {
+  filterArray,
+  filterParams,
+  setFilterParams,
+  resetFilter,
+  addFilter,
+  addGroup,
+  updateGroup,
+  updateFilter,
+  insertFilter,
+  insertGroup,
+  deleteById,
+};
+
+provide("filterPropsProvider", filterProps);
+
+const handleClickCheckboxHeader = () => {
+  isAllChecked.value = !isAllChecked.value;
+
+  const activeLayers = groupedActiveLayers.value.flatMap((el) => el.layerLists);
+  const targetLayer = activeLayers.find(
+    (el) => (el as VectorTiles).layer_id === props.layerId
+  );
+
+  if (targetLayer) {
+    highlightedLayers.value[(targetLayer as VectorTiles).layer_id] = {
+      ...(targetLayer as VectorTiles),
+      ids: [],
+      highlightedAll: isAllChecked.value,
+    };
+  }
+};
+
+const handleClickCheckboxRow = (event: Event, rowData: any) => {
+  const activeLayers = groupedActiveLayers.value.flatMap((el) => el.layerLists);
+  const targetLayer = activeLayers.find(
+    (el) => (el as VectorTiles).layer_id === props.layerId
+  );
+  if (targetLayer) {
+    if ((targetLayer as VectorTiles).layer_id in highlightedLayers.value) {
+      const existingIds: number[] =
+        highlightedLayers.value[props.layerId]?.ids || [];
+      const index = existingIds.indexOf(rowData.ogc_fid);
+      let updatedIds;
+      if (index === -1) {
+        updatedIds = [...existingIds, rowData.ogc_fid];
+      } else {
+        updatedIds = existingIds.filter((id) => id !== rowData.ogc_fid);
+      }
+      highlightedLayers.value[(targetLayer as VectorTiles).layer_id]["ids"] =
+        updatedIds;
+    } else {
+      highlightedLayers.value[(targetLayer as VectorTiles).layer_id] = {
+        ...(targetLayer as VectorTiles),
+        ids: [rowData.ogc_fid],
+        highlightedAll: isAllChecked.value,
+      };
+    }
+  }
+  event.preventDefault();
+  event.stopPropagation();
+  // onRowSelect({ ogc_fid: rowData.ogc_fid, geom: rowData.geom });
+};
 </script>
 
 <template>
-  <div class="flex flex-col gap-3 p-6 h-full max-h-full relative">
-    <div class="flex justify-between">
-      <h1 class="text-grey-400">Data Table</h1>
-      <button
-        @click="
-          () => {
-            toggleTable();
-            store.fullscreen && toggleFullscreen();
-            highlightedIds = [];
-            selectedIds = [];
-          }
-        "
-      >
-        <IcCross class="w-4 h-4 text-grey-400" :fontControlled="false" />
-      </button>
-    </div>
-    <hr class="border-b border-grey-700" />
-    <div class="flex justify-between items-center gap-3">
-      <div class="flex items-center gap-3">
-        <button
-          class="flex items-center gap-3 p-2 border border-grey-600 rounded-xxs bg-grey-800 text-xs text-grey-200"
-        >
-          <IcShrink
-            class="w-[14px] h-[14px] text-grey-400"
-            :fontControlled="false"
-          />
-          {{
-            store.activeCollection &&
-            capitalizeEachWords(store.activeCollection)
-          }}
+  <div
+    class="flex-col p-3 h-full max-h-full relative"
+    :class="activeTable?.layer_id === layerId ? 'flex' : 'hidden'"
+  >
+    <div class="flex justify-between border-b border-grey-700 pb-1">
+      <div>
+        <h1 class="text-grey-50 text-xs font-medium">Data Table</h1>
+        <p class="text-grey-500 text-2xs">
+          Manage active layer to be displayed on map
+        </p>
+      </div>
+      <div class="flex items-center gap-2">
+        <button @click="toggleFullscreen">
+          <IcExpand class="size-3 text-grey-400" :fontControlled="false" />
         </button>
-        <div class="border-l border-grey-700 h-8"></div>
+        <button
+          @click="
+            () => {
+              closeTable();
+              resetFilterList();
+              removeAllHighlightedLayer();
+            }
+          "
+        >
+          <IcCross class="size-[14px] text-grey-400" :fontControlled="false" />
+        </button>
+      </div>
+    </div>
 
-        <Menu as="div" class="relative z-10">
-          <MenuButton
-            class="flex items-center gap-3 p-2 border border-grey-600 rounded-xxs bg-grey-800 text-xs text-grey-200"
+    <div class="flex justify-between items-center gap-3 my-3">
+      <div class="flex items-center gap-3">
+        <UPopover
+          v-model:open="showFieldOpen"
+          :content="{ align: 'start' }"
+          :ui="{
+            content:
+              'p-2 w-52 max-h-52 overflow-y-scroll rounded-sm bg-grey-800 shadow-lg ring-1 ring-grey-700 overflow-x-hidden',
+          }"
+        >
+          <UButton
+            :color="showFieldOpen ? 'gray' : 'gray'"
+            :variant="showFieldOpen ? 'solid' : 'ghost'"
+            :class="[
+              showFieldOpen
+                ? 'border-grey-500 bg-grey-700'
+                : 'border-grey-600 bg-transparent',
+              'flex items-center gap-1 py-1 px-[6px] border rounded-sm text-2xs text-grey-200',
+            ]"
           >
-            <IcSort
-              class="w-[14px] h-[14px] text-grey-400"
-              :fontControlled="false"
-            />
+            <IcSort class="size-3 text-grey-400" :fontControlled="false" />
             Show All Field
-          </MenuButton>
-          <transition
-            enter-active-class="transition duration-100 ease-out"
-            enter-from-class="transform scale-95 opacity-0"
-            enter-to-class="transform scale-100 opacity-100"
-            leave-active-class="transition duration-75 ease-in"
-            leave-from-class="transform scale-100 opacity-100"
-            leave-to-class="transform scale-95 opacity-0"
-          >
-            <MenuItems
-              class="absolute left-0 mt-2 w-52 max-h-52 overflow-y-scroll origin-top-left rounded-xxs bg-grey-800 shadow-lg ring-1 ring-black/5 focus:outline-none overflow-x-hidden"
-            >
-              <MenuItem v-for="column in columns" :key="column.key">
-                <div
-                  class="text-grey-50 flex w-full items-center p-2 gap-x-2 text-xs first:rounded-t-xxs last:rounded-b-xxs"
-                >
-                  <CoreCheckbox
-                    :id="column.key + '-checkbox'"
-                    :index="0"
-                    :is-checked="!hiddenFields.includes(column.key)"
-                    :forHeader="true"
-                    @click="
-                      (event:Event) => {
-                        event.preventDefault();
-                        if(hiddenFields.includes(column.key)){
-                          hiddenFields = hiddenFields.filter(c => c !== column.key)
-                        } else {
-                          hiddenFields = [...hiddenFields, column.key]
-                        }
+          </UButton>
+
+          <template #content>
+            <div class="flex flex-col">
+              <div
+                v-for="column in columns"
+                :key="column.key"
+                class="text-grey-50 flex w-full items-center p-0 gap-x-2 text-xs first:rounded-t-xxs last:rounded-b-xxs"
+              >
+                <CoreCheckbox
+                  :id="column.key + '-checkbox'"
+                  :index="0"
+                  :is-checked="!hiddenFields.includes(column.key)"
+                  :forHeader="true"
+                  @click="
+                    (event:Event) => {
+                      event.preventDefault();
+                      if(hiddenFields.includes(column.key)){
+                        hiddenFields = hiddenFields.filter(c => c !== column.key)
+                      } else {
+                        hiddenFields = [...hiddenFields, column.key]
                       }
-                    "
-                  />
-                  {{ column.label }}
-                </div>
-              </MenuItem>
-            </MenuItems>
-          </transition>
-        </Menu>
+                    }
+                  "
+                />
+                {{ column.label }}
+              </div>
+            </div>
+          </template>
+        </UPopover>
 
         <button
-          class="flex items-center gap-3 p-2 border border-grey-600 rounded-xxs bg-grey-800 text-xs text-grey-200"
+          class="flex items-center gap-1 py-1 px-[6px] border border-grey-600 rounded-sm bg-transparent text-2xs text-grey-200"
           @click="
             () => {
               openModal();
             }
           "
         >
-          <IcFilter
-            class="w-[14px] h-[14px] text-grey-400"
-            :fontControlled="false"
-          />
+          <IcFilter class="size-3 text-grey-400" :fontControlled="false" />
           Filter
         </button>
         <UModal
-          v-model="isOpen"
+          v-model:open="isOpen"
           :ui="{
-            background: 'bg-grey-900',
-            height: 'h-[50vh]',
-            rounded: 'rounded-xxs',
+            content: 'bg-grey-900 h-[50vh] rounded-sm',
           }"
         >
-          <MapManagementTableFilter
-            :columns="columns"
-            @close-modal="closeModal"
-          />
+          <!-- <template #close><div>test</div></template> -->
+          <template #content>
+            <MapManagementTableFilter
+              :layerId="layerId"
+              :columns="columns"
+              @close-modal="closeModal"
+              :filterArray="filterArray"
+            />
+          </template>
         </UModal>
         <button
           @click="downloadData"
-          class="flex items-center gap-3 p-2 border border-grey-600 rounded-xxs bg-grey-800 text-xs text-grey-200"
+          class="flex items-center gap-1 py-1 px-[6px] border border-grey-600 rounded-sm bg-transparent text-2xs text-grey-200"
         >
-          <IcDownload
-            class="w-[14px] h-[14px] text-grey-400"
-            :fontControlled="false"
-          />
-          Download {{ selectedIds.length ? "Selected" : "All" }}
+          <IcDownload class="size-3 text-grey-400" :fontControlled="false" />
+          Download
+          {{ highlightedLayers[layerId]?.["ids"]?.length ? "Selected" : "All" }}
         </button>
       </div>
-      <div class="flex items-center gap-3">
-        <button
-          @click="toggleFullscreen"
-          class="p-2 border border-grey-600 rounded-xxs bg-grey-800"
+      <div class="flex items-center gap-1">
+        <div
+          v-if="
+            highlightedLayers[layerId] &&
+            highlightedLayers[layerId]['ids'].length > 0
+          "
+          class="rounded-sm border border-grey-800 px-2 py-1 bg-grey-800 text-grey-50 flex justify-center items-center text-2xs"
         >
-          <IcExpand
-            class="w-[14px] h-[14px] text-grey-400"
-            :fontControlled="false"
-          />
+          {{ highlightedLayers[layerId]["ids"].length }}
+          of
+          {{ countData }}
+          Rows
+          {{ isAllChecked ? "Unselected" : "Selected" }}
+        </div>
+        <MapManagementTableShowFeatures
+          :layerId="layerId"
+          :filterParams="filterParams"
+        />
+      </div>
+    </div>
+    <div
+      v-if="activeTableList.length > 0"
+      class="flex overflow-x-auto hide-scrollbar"
+    >
+      <div
+        class="flex items-center gap-1 whitespace-nowrap px-[6px] py-1 border border-grey-600 rounded-t-xxs cursor-pointer"
+        :class="
+          item.layer_id === activeTable?.layer_id && 'bg-grey-800 font-semibold'
+        "
+        v-for="item in activeTableList"
+        @click="
+          () => {
+            setActiveTable(item);
+          }
+        "
+      >
+        <p class="text-2xs text-grey-200">{{ item.label }}</p>
+        <button
+          @click.stop="
+            () => {
+              removeActiveTableByKey(item.layer_id);
+              removeFilterListByKey(item.key);
+              removeHighlightedLayer(item.layer_id);
+            }
+          "
+        >
+          <IcCross class="size-2 text-grey-400" :fontControlled="false" />
         </button>
       </div>
     </div>
     <!-- New Table -->
     <section
-      class="h-[calc(100%-5.5rem)] flex flex-col rounded-xxs border border-grey-700 w-full overflow-auto pb-12 relative"
+      class="h-[calc(100%-5.5rem)] flex flex-col rounded-sm border border-grey-600 w-full overflow-auto pb-12 relative"
       @scroll="handleScroll"
     >
       <header class="flex w-full sticky top-0">
-        <div class="bg-grey-800 h-14 w-14 flex items-center justify-center">
+        <div class="bg-grey-800 h-8 w-14 flex items-center justify-center">
           <CoreCheckbox
             id="all-checkbox"
             :index="0"
             :is-checked="isAllChecked"
             :forHeader="true"
-            @click="
-              () => {
-                isAllChecked = !isAllChecked;
-                selectedIds = [];
-              }
-            "
+            @click="handleClickCheckboxHeader"
           />
         </div>
-        <Menu
-          as="div"
-          class="relative"
+        <UPopover
           v-for="column in columns.filter((c) => !hiddenFields.includes(c.key))"
           :key="column.key"
+          v-model:open="columnPopoverOpen[column.key]"
+          :content="{ align: 'start' }"
+          :ui="{
+            content:
+              'w-full rounded-sm bg-grey-800 shadow-lg ring-1 ring-black/5 overflow-hidden',
+          }"
         >
-          <MenuButton
-            class="bg-grey-800 hover:bg-grey-700 h-14 flex-1 min-w-[12rem] text-grey-50 flex items-center justify-between text-xs font-medium px-3 py-4 group"
+          <button
+            class="bg-grey-800 hover:bg-grey-700 h-8 flex-1 min-w-[12rem] text-grey-50 flex items-center justify-between text-xs font-medium px-3 py-4 group"
           >
             <div class="flex gap-2">
               <p class="line-clamp-2">{{ column.label }}</p>
@@ -431,88 +604,78 @@ function openModal() {
               "
               aria-hidden="true"
             />
-          </MenuButton>
-          <transition
-            enter-active-class="transition duration-100 ease-out"
-            enter-from-class="transform scale-95 opacity-0"
-            enter-to-class="transform scale-100 opacity-100"
-            leave-active-class="transition duration-75 ease-in"
-            leave-from-class="transform scale-100 opacity-100"
-            leave-to-class="transform scale-95 opacity-0"
-          >
-            <MenuItems
-              class="absolute left-0 mt-2 w-full origin-top-left rounded-xxs bg-grey-800 shadow-lg ring-1 ring-black/5 focus:outline-none overflow-hidden"
-            >
-              <MenuItem>
-                <button
-                  class="text-grey-50 flex w-full items-center p-3 text-xs hover:bg-grey-700"
-                  @click="
-                    () => {
-                      sortBy = column.key;
-                      refetch();
-                    }
-                  "
-                >
-                  <UIcon
-                    name="i-heroicons-bars-3-bottom-right"
-                    class="mr-2 h-4 w-4 rotate-180"
-                    aria-hidden="true"
-                  />
-                  Sort Ascending
-                </button>
-              </MenuItem>
-              <MenuItem>
-                <button
-                  class="text-grey-50 flex w-full items-center p-3 text-xs hover:bg-grey-700"
-                  @click="
-                    () => {
-                      sortBy = '-' + column.key;
-                      refetch();
-                    }
-                  "
-                >
-                  <UIcon
-                    name="i-heroicons-bars-3-bottom-right"
-                    class="mr-2 h-4 w-4 scale-x-[-1]"
-                    aria-hidden="true"
-                  />
-                  Sort Descending
-                </button>
-              </MenuItem>
-            </MenuItems>
-          </transition>
-        </Menu>
+          </button>
+
+          <template #content>
+            <div class="flex flex-col">
+              <button
+                class="text-grey-50 flex w-full items-center p-3 text-xs hover:bg-grey-700"
+                @click="
+                  () => {
+                    sortBy = column.key;
+                    refetch();
+                    columnPopoverOpen[column.key] = false;
+                  }
+                "
+              >
+                <UIcon
+                  name="i-heroicons-bars-3-bottom-right"
+                  class="mr-2 h-4 w-4 rotate-180"
+                  aria-hidden="true"
+                />
+                Sort Ascending
+              </button>
+              <button
+                class="text-grey-50 flex w-full items-center p-3 text-xs hover:bg-grey-700"
+                @click="
+                  () => {
+                    sortBy = '-' + column.key;
+                    refetch();
+                    columnPopoverOpen[column.key] = false;
+                  }
+                "
+              >
+                <UIcon
+                  name="i-heroicons-bars-3-bottom-right"
+                  class="mr-2 h-4 w-4 scale-x-[-1]"
+                  aria-hidden="true"
+                />
+                Sort Descending
+              </button>
+            </div>
+          </template>
+        </UPopover>
       </header>
 
       <template v-if="tableData?.pages.length">
         <template v-for="tableRows in tableData.pages">
           <main
             role="button"
-            @click="() => onRowClick(rowData.ogc_fid)"
+            @click="() => onRowClick(rowData.geom)"
             class="flex w-full group"
             v-for="rowData in tableRows"
             :key="rowData.ogc_fid"
           >
             <div
-              :class="
-                'h-[4.5rem] w-14 flex items-center justify-center group-hover:bg-grey-700 ' +
-                (highlightedIds.includes(rowData.ogc_fid) ? 'bg-red-950 ' : ' ')
-              "
+              :class="[
+                'h-8 w-10 flex items-center justify-center group-hover:bg-grey-700',
+                (!isAllChecked &&
+                  highlightedLayers[layerId]?.ids.includes(rowData.ogc_fid)) ||
+                (isAllChecked &&
+                  !highlightedLayers[layerId]?.ids.includes(rowData.ogc_fid))
+                  ? 'bg-red-950'
+                  : '',
+              ]"
             >
               <CoreCheckbox
                 id="id-checkbox"
                 :index="rowData.ogc_fid"
                 :is-checked="
-                  isAllChecked || selectedIds.includes(rowData.ogc_fid)
+                  isAllChecked ||
+                  (highlightedLayers[layerId] && highlightedLayers[layerId]['ids'].some((item: number) => item === rowData.ogc_fid))
                 "
                 :forHeader="true"
-                @click="
-                  (event : Event) => {
-                    event.preventDefault()
-                    event.stopPropagation()
-                    onRowSelect(rowData.ogc_fid);
-                  }
-                "
+                @click="(event:Event) => handleClickCheckboxRow(event, rowData)"
               />
             </div>
             <div
@@ -520,15 +683,24 @@ function openModal() {
                 (c) => !hiddenFields.includes(c.key)
               )"
               :key="column.key"
-              :class="
-                'first-letter:h-[4.5rem] flex-1 min-w-[12rem] flex items-center text-xs font-normal px-3 py-4 group-hover:bg-grey-700 ' +
-                (highlightedIds.includes(rowData.ogc_fid)
-                  ? 'text-brand-500 '
-                  : 'text-grey-400 ') +
-                (highlightedIds.includes(rowData.ogc_fid) ? 'bg-red-950 ' : ' ')
-              "
+              :class="[
+                'first-letter:h-8 flex-1 min-w-[12rem] overflow-hidden flex items-center text-xs font-normal px-3 group-hover:bg-grey-700',
+                highlightedLayers[layerId]?.ids.includes(rowData.ogc_fid)
+                  ? isAllChecked
+                    ? 'text-grey-400'
+                    : 'text-brand-500 bg-red-950'
+                  : isAllChecked
+                  ? 'text-brand-500 bg-red-950'
+                  : 'text-grey-400',
+              ]"
             >
-              <p class="line-clamp-2">{{ rowData[column.key] }}</p>
+              <MapManagementTableTooltip :text="rowData[column.key]">
+                <p
+                  class="truncate w-[11rem] overflow-hidden whitespace-nowrap text-ellipsis"
+                >
+                  {{ rowData[column.key] }}
+                </p>
+              </MapManagementTableTooltip>
             </div>
           </main>
         </template>
@@ -540,7 +712,7 @@ function openModal() {
         v-if="hasNextPage"
         :loading="isCountFetching || isHeaderFetching || isTableFetching"
         @click="() => fetchNextPage()"
-        class="absolute bottom-8 right-8 w-1/4 px-3 min-w-fit h-9 rounded-xxs flex justify-center items-center"
+        class="absolute bottom-8 right-8 w-1/4 px-3 min-w-fit h-9 rounded-sm flex justify-center items-center"
         :label="
           isCountFetching || isHeaderFetching || isTableFetching
             ? 'Loading'
@@ -551,17 +723,10 @@ function openModal() {
       </UButton
       ><span
         v-else
-        class="absolute rounded-xxs border border-grey-600 bottom-8 right-8 w-1/4 px-3 min-w-fit bg-grey-800 h-9 text-grey-200 flex justify-center items-center text-xs"
+        class="absolute rounded-sm border border-grey-600 bottom-8 right-8 w-1/4 px-3 min-w-fit bg-grey-800 h-9 text-grey-200 flex justify-center items-center text-xs"
         :style="{ opacity: floatVisibility }"
         >End of Data</span
       ></template
-    >
-
-    <span
-      class="absolute rounded-xxs border border-grey-600 bottom-8 left-8 w-1/4 px-3 min-w-fit bg-grey-800 h-9 text-grey-200 flex justify-center items-center text-xs"
-      >{{ selectedIds.length }}
-      {{ (isAllChecked ? "un" : "") + "selected" }} from
-      {{ countData }} rows</span
     >
   </div>
 </template>

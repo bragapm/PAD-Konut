@@ -1,53 +1,58 @@
 <script setup lang="ts">
-import { Popover, PopoverButton, PopoverPanel } from "@headlessui/vue";
-import { useFloating, offset, flip } from "@floating-ui/vue";
 import IcArrowReg from "~/assets/icons/ic-arrow-reg.svg";
 
 defineProps<{
   modelValue: string;
   updateColor: (color: string) => void;
+  simple?: boolean;
 }>();
 const emit = defineEmits(["update:modelValue"]);
 
-const reference = ref(null);
-const floating = ref(null);
-const { floatingStyles } = useFloating(reference, floating, {
-  placement: "right-start",
-  middleware: [offset(0), flip()],
-});
+const isOpen = ref(false);
 </script>
 
 <template>
-  <Popover class="relative w-full flex items-center">
-    <PopoverButton
-      ref="reference"
-      class="w-full flex items-center gap-2 focus:outline-none p-2 border border-grey-500 rounded-xxs"
+  <UPopover
+    v-model:open="isOpen"
+    :class="[!simple && 'w-full']"
+    :content="{ side: 'right' }"
+    :ui="{
+      content: 'ring ring-grey-700 rounded-lg bg-grey-900',
+    }"
+  >
+    <button
+      v-if="simple"
+      class="size-4 focus:outline-none border border-grey-600 bg-grey-700 rounded-sm"
+      :style="{
+        backgroundColor: modelValue,
+      }"
+    ></button>
+    <button
+      v-else
+      class="w-full h-[26px] flex items-center gap-2 focus:outline-none px-2 py-1 border border-grey-600 bg-grey-700 rounded-sm"
     >
       <div
-        class="w-full h-3 rounded-xxs"
+        class="w-full h-3 rounded-sm border border-white/45"
         :style="{
           backgroundColor: modelValue,
         }"
       ></div>
       <IcArrowReg
         :fontControlled="false"
-        class="w-4 h-4 rotate-180 text-grey-50"
+        class="w-4 h-4 rotate-180 text-grey-400"
       />
-    </PopoverButton>
+    </button>
 
-    <teleport to="body">
-      <PopoverPanel
-        ref="floating"
-        :style="floatingStyles"
-        class="absolute z-10 p-2 border border-grey-500 rounded-xxs bg-grey-900"
-      >
+    <template #content>
+      <div class="p-2 ring-grey-700 rounded-lg bg-grey-900">
         <CoreInputColorPicker
           :color="modelValue"
           :updateColor="(color:string) => {
           updateColor(color)
           emit('update:modelValue', color);}"
+          @close="isOpen = false"
         />
-      </PopoverPanel>
-    </teleport>
-  </Popover>
+      </div>
+    </template>
+  </UPopover>
 </template>

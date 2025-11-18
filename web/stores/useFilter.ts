@@ -27,90 +27,44 @@ export type FilterParams = {
 };
 
 export const useFilter = defineStore("filter", () => {
-  const filterArray = ref<(FilterItem | GroupItem)[]>([]);
-  const filterParams = ref<FilterParams[] | null>(null);
+  const filterArrayList = ref<{
+    [key: string]: (FilterItem | GroupItem)[];
+  }>({});
+  const filterParamsList = ref<{
+    [key: string]: FilterParams[];
+  }>({});
 
-  function setFilterParams(value: FilterParams[] | null) {
-    filterParams.value = value;
+  function addFilterArrayList(key: string, item: (FilterItem | GroupItem)[]) {
+    filterArrayList.value[key] = item;
   }
-
-  function addFilter() {
-    let current = JSON.parse(JSON.stringify(filterArray.value));
-    filterArray.value = [
-      ...current,
-      { id: crypto.randomUUID(), field: "", operator: "", value: "" },
-    ];
+  function addFilterParamsList(key: string, item: FilterParams[]) {
+    filterParamsList.value[key] = item;
   }
-
-  function addGroup(group: LogicalOperator) {
-    let current = JSON.parse(JSON.stringify(filterArray.value));
-    filterArray.value = [
-      ...current,
-      { id: crypto.randomUUID(), group: group, filter: [] },
-    ];
+  function removeFilterListByKey(key: string) {
+    delete filterArrayList.value[key];
+    delete filterParamsList.value[key];
   }
-
-  function updateFilter(id: string, newValue: FilterItem) {
-    const current = [...JSON.parse(JSON.stringify(filterArray.value))];
-    const path = findPathById(current, id);
-
-    updateByPath(current, path, newValue);
-    filterArray.value = current;
+  function resetFilterList() {
+    filterArrayList.value = {};
+    filterParamsList.value = {};
   }
-
-  function updateGroup(id: string, newValue: LogicalOperator) {
-    const current = [...JSON.parse(JSON.stringify(filterArray.value))];
-    const path = findPathById(current, id);
-    updateGroupByPath(current, path, newValue);
-    filterArray.value = current;
-  }
-
-  function insertFilter(id: string) {
-    let current = JSON.parse(JSON.stringify(filterArray.value));
-    const path = findPathById(current, id);
-    insertByPath(current, path, {
-      id: crypto.randomUUID(),
-      field: "",
-      operator: "",
-      value: "",
-    });
-    filterArray.value = current;
-  }
-
-  function insertGroup(id: string, group: LogicalOperator) {
-    let current = JSON.parse(JSON.stringify(filterArray.value));
-    const path = findPathById(current, id);
-    insertByPath(current, path, {
-      id: crypto.randomUUID(),
-      group: group,
-      filter: [],
-    });
-    filterArray.value = current;
-  }
-
-  function deleteById(id: string) {
-    const current = [...JSON.parse(JSON.stringify(filterArray.value))];
-    const path = findPathById(current, id);
-    const deleted = deleteByPath(current, path);
-    filterArray.value = deleted;
-  }
-
-  function resetFilter() {
-    filterArray.value = [];
-    filterParams.value = null;
-  }
-
   return {
-    filterArray,
-    filterParams,
-    setFilterParams,
-    addFilter,
-    insertFilter,
-    addGroup,
-    insertGroup,
-    updateFilter,
-    updateGroup,
-    resetFilter,
-    deleteById,
+    filterArrayList,
+    addFilterArrayList,
+    filterParamsList,
+    addFilterParamsList,
+    resetFilterList,
+    removeFilterListByKey
+    // filterArray,
+    // filterParams,
+    // setFilterParams,
+    // addFilter,
+    // insertFilter,
+    // addGroup,
+    // insertGroup,
+    // updateFilter,
+    // updateGroup,
+    // resetFilter,
+    // deleteById,
   };
 });

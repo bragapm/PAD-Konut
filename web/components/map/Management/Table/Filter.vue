@@ -1,35 +1,48 @@
 <script lang="ts" setup>
+import { inject } from "vue";
 import { useQueryClient } from "@tanstack/vue-query";
 import { transformToFilterParams } from "~/utils/filter";
 import IcCross from "~/assets/icons/ic-cross.svg";
 
 const props = defineProps<{
+  layerId: string;
   columns: TableColumn[];
+  filterArray: (FilterItem | GroupItem)[];
 }>();
+
+const filterProps = inject<{
+  addFilter: Function;
+  addGroup: Function;
+  resetFilter: Function;
+  setFilterParams: Function;
+}>("filterPropsProvider");
+if (!filterProps) {
+  throw new Error("filterProps not provided");
+}
 
 const emit = defineEmits<{
   (e: "closeModal"): void;
 }>();
 
 const filterStore = useFilter();
-const { addFilter, addGroup, setFilterParams, resetFilter } = filterStore;
-const { filterArray } = storeToRefs(filterStore);
+const { addFilterArrayList, addFilterParamsList, resetFilterList } =
+  filterStore;
 
 const addFilterMenu = [
   [
     {
       label: "New Filter",
-      click: () => {
-        addFilter();
+      onSelect: () => {
+        filterProps.addFilter();
       },
     },
     {
       label: "AND Group",
-      click: () => addGroup("_and"),
+      onSelect: () => filterProps.addGroup("_and"),
     },
     {
       label: "OR Group",
-      click: () => addGroup("_or"),
+      onSelect: () => filterProps.addGroup("_or"),
     },
   ],
 ];
@@ -72,50 +85,35 @@ const queryClient = useQueryClient();
           />
         </template>
       </div>
-      <UDropdown
+      <UDropdownMenu
         :items="addFilterMenu"
-        :popper="{ placement: 'bottom-start' }"
-        :ui="{
-          wrapper: 'w-full',
-          rounded: 'rounded-xxs',
-          background: 'bg-grey-700',
-          ring: 'ring-1 ring-grey-600',
-          item: {
-            base: 'cursor-pointer hover:text-grey-700',
-            padding: 'px-1.5 py-1',
-            selected: 'bg-grey-200 text-grey-700',
-            color: 'text-grey-200',
-            rounded: 'rounded-xxs',
-            active: 'bg-grey-200 text-grey-700',
-            inactive: 'text-grey-200',
-            size: 'text-xs',
-          },
+        :content="{
+          side: 'bottom',
+          align: 'start',
         }"
       >
         <UButton
           color="brand"
           variant="outline"
           label="Add Filter"
-          :ui="{
-            rounded: 'rounded-xxs',
-            base: 'w-full justify-between items-center',
-          }"
+          class="w-full justify-between items-center"
           trailing-icon="i-heroicons-chevron-down-20-solid"
         />
-      </UDropdown>
+      </UDropdownMenu>
     </div>
     <div class="grid grid-cols-2 gap-x-3">
       <UButton
         @click="
           () => {
-            resetFilter();
+            filterProps.resetFilter();
+            resetFilterList();
             queryClient.refetchQueries({
-              queryKey: ['table_data_query_key'],
+              queryKey: ['table_data_query_key', layerId],
               type: 'active',
               exact: true,
             });
             queryClient.refetchQueries({
-              queryKey: ['count_table_data_query_key'],
+              queryKey: ['count_table_data_query_key', layerId],
               type: 'active',
               exact: true,
             });
@@ -123,29 +121,31 @@ const queryClient = useQueryClient();
         "
         color="brand"
         variant="outline"
-        :ui="{ rounded: 'rounded-[4px]' }"
-        class="w-full justify-center text-sm"
+        class="w-full justify-center text-sm rounded-sm"
         >Reset Filter</UButton
       >
       <UButton
         @click="
           () => {
-            setFilterParams(transformToFilterParams(filterArray));
+            const transformesFilterParams =
+              transformToFilterParams(filterArray);
+            filterProps.setFilterParams(transformesFilterParams);
+            addFilterParamsList(layerId, transformesFilterParams);
+            addFilterArrayList(layerId, filterArray);
             queryClient.refetchQueries({
-              queryKey: ['table_data_query_key'],
+              queryKey: ['table_data_query_key', layerId],
               type: 'active',
               exact: true,
             });
             queryClient.refetchQueries({
-              queryKey: ['count_table_data_query_key'],
+              queryKey: ['count_table_data_query_key', layerId],
               type: 'active',
               exact: true,
             });
           }
         "
         color="brand"
-        :ui="{ rounded: 'rounded-[4px]' }"
-        class="w-full justify-center text-sm"
+        class="w-full justify-center text-sm rounded-sm"
         :loading="false"
         >Apply Filter</UButton
       >

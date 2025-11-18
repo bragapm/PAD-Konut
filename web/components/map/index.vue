@@ -4,7 +4,7 @@ import type { LngLatBoundsLike, StyleSpecification } from "maplibre-gl";
 import type { Raw } from "vue";
 import { shallowRef, onMounted, onUnmounted, markRaw } from "vue";
 import { useMapData, useSharedMap } from "~/utils";
-import addRasterColorProtocol from "~/utils/addRasterColorProtocol.ts";
+import addRasterColorProtocol from "~/utils/addRasterColorProtocol";
 import bbox from "@turf/bbox";
 
 const { isLoading, data: mapData } = await useMapData();
@@ -20,6 +20,7 @@ const { setMapLoad, setMapRef, setGeolocateRef } = store;
 //map init
 onMounted(async () => {
   setMapLoad(false);
+  const { data: generalSettings } = await useGeneralSettings();
   const style: StyleSpecification = {
     version: 8,
     sprite: window.location.origin + "/panel/sprites/sprite",
@@ -28,7 +29,8 @@ onMounted(async () => {
       "basemap-sources": {
         type: "raster",
         tiles: [
-          "https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+          generalSettings.value?.data?.basemaps?.[0]?.url ??
+            "https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
         ],
         tileSize: 256,
       },
@@ -96,6 +98,9 @@ onUnmounted(() => {
 const layerStore = useMapLayer();
 const { fetchActiveLayers } = layerStore;
 fetchActiveLayers();
+
+const mapStore = useMap();
+const { highlightedLayers, selectedLayerId } = storeToRefs(mapStore);
 </script>
 
 <template>
@@ -107,13 +112,18 @@ fetchActiveLayers();
     /></a> -->
     <div class="map" ref="mapContainer"></div>
     <MapLayer v-if="store.mapLoad" />
+    <MapHighlightedLayer
+      v-if="Object.keys(highlightedLayers).length"
+      v-for="item in Object.values(highlightedLayers)"
+      :item="item"
+    />
     <MapPopup />
+    <MapSelectedLayer v-if="map && selectedLayerId" />
   </div>
 </template>
 
 <style scoped>
 @import "https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css";
-@import "https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.css";
 
 .map-wrap {
   position: relative;

@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { Menu, MenuButton, MenuItems, MenuItem } from "@headlessui/vue";
-import { useFloating, offset, flip } from "@floating-ui/vue";
 import IcMenuDots from "~/assets/icons/ic-menu-dots.svg";
 import type { LngLatBoundsLike } from "maplibre-gl";
 import bbox from "@turf/bbox";
 import { useQuery, useQueryClient } from "@tanstack/vue-query";
+import { capitalizeEachWords } from "~/utils";
 
 const props = defineProps<{
   disabled: boolean;
   item: LayerLists;
 }>();
+const open = ref(false);
 const queryClient = useQueryClient();
 const toast = useToast();
 const authStore = useAuth();
@@ -21,16 +21,7 @@ const { map } = storeToRefs(mapStore);
 
 const mapLayerStore = useMapLayer();
 const tableDataStore = useTableData();
-const { activeCollection } = storeToRefs(tableDataStore);
-const filterStore = useFilter();
-const { resetFilter } = filterStore;
-
-const reference = ref(null);
-const floating = ref(null);
-const { floatingStyles } = useFloating(reference, floating, {
-  placement: "right-start",
-  middleware: [offset(10), flip()],
-});
+const { addActiveTableList, setActiveTable } = tableDataStore;
 
 const queueId = ref("");
 const exportLoad = ref(false);
@@ -76,7 +67,7 @@ const downloadFile = async (fileId: string) => {
       title: "Download failed",
       description: "Something wrong, try again later",
       icon: "i-heroicons-information-circle",
-      timeout: 1500,
+      duration: 1500,
     });
   }
 };
@@ -133,43 +124,47 @@ const handleExport = async (format: string) => {
       title: "Export JSON failed",
       description: "Something wrong, try again later",
       icon: "i-heroicons-information-circle",
-      timeout: 1500,
+      duration: 1500,
     });
   }
 };
 </script>
 
 <template>
-  <Menu as="div" class="relative inline-block">
-    <MenuButton :disabled="disabled" ref="reference" class="align-middle">
+  <UPopover
+    v-model:open="open"
+    :content="{
+      align: 'start',
+      side: 'right',
+      sideOffset: 10,
+    }"
+    :ui="{
+      content:
+        'w-56 h-fit p-2 flex flex-col gap-2 rounded-sm bg-grey-900 shadow-lg ring-1 ring-grey-700 focus:outline-none',
+    }"
+  >
+    <UButton
+      :disabled="disabled"
+      color="neutral"
+      variant="ghost"
+      class="p-0 hover:bg-transparent"
+    >
       <IcMenuDots
-        :class="['w-3 h-3', disabled ? 'text-grey-600' : 'text-grey-400']"
+        :class="['size-3', disabled ? 'text-grey-600' : 'text-grey-400']"
         :fontControlled="false"
       />
-    </MenuButton>
+    </UButton>
 
-    <transition
-      enter-active-class="transition duration-100 ease-out"
-      enter-from-class="transform scale-95 opacity-0"
-      enter-to-class="transform scale-100 opacity-100"
-      leave-active-class="transition duration-75 ease-in"
-      leave-from-class="transform scale-100 opacity-100"
-      leave-to-class="transform scale-95 opacity-0"
-    >
-      <teleport to="body">
-        <MenuItems
-          ref="floating"
-          :style="floatingStyles"
-          class="absolute -right-2 translate-x-full translate-y-full bottom-5 w-56 h-fit p-2 flex flex-col gap-2 rounded-xxs bg-grey-900 shadow-lg ring-1 ring-grey-700 focus:outline-none"
-        >
-          <MenuItem v-slot="{ active }">
-            <button
-              @click="
+    <template #content>
+      <button
+        @click="
                 () => {
                   if(item.source ==='three_d_tiles'){
                     const data = mapLayerStore.threeDLayerCenter
-                    const current = data[data.findIndex(el => el.id === item.layer_id)]
-                    map?.flyTo({ center : current.center , zoom : current.zoom })
+                    const current = data[data.findIndex((el:any) => el.id === item.layer_id)]
+                    if(current) {
+                      map?.flyTo({ center : current.center , zoom : current.zoom })
+                    }
                   }else{
                     if((item as VectorTiles|RasterTiles).bounds){
                       map?.fitBounds(bbox(item.bounds) as LngLatBoundsLike, { padding: {top: 100, bottom:150, left: 300, right: 50} });
@@ -177,127 +172,114 @@ const handleExport = async (format: string) => {
                   }
                 }
               "
-              :class="[
-                active ? 'bg-grey-700' : 'bg-transparent text-grey-200',
-                'group flex w-full items-center gap-3 rounded-xxs p-2 text-xs text-white',
-              ]"
-            >
-              Zoom To Fit
-            </button>
-          </MenuItem>
-          <hr class="border-t-2 border-grey-800" />
-          <MenuItem v-if="item.source === 'vector_tiles'" v-slot="{ active }">
-            <button
-              @click="
+        :class="[
+          'group flex w-full items-center gap-3 rounded-sm p-2 text-xs text-white hover:bg-grey-700 cursor-pointer',
+        ]"
+      >
+        Zoom To Fit
+      </button>
+      <hr class="border-t-2 border-grey-800" />
+      <button
+        v-if="item.source === 'vector_tiles'"
+        @click="
+          () => {
+            handleExport('geojson');
+          }
+        "
+        :class="[
+          'group flex w-full items-center gap-3 rounded-sm p-2 text-xs text-white hover:bg-grey-700 cursor-pointer',
+        ]"
+      >
+        Export JSON
+      </button>
+      <button
+        v-if="item.source === 'vector_tiles'"
+        @click="
+          () => {
+            handleExport('gpkg');
+          }
+        "
+        :class="[
+          'group flex w-full items-center gap-3 rounded-sm p-2 text-xs text-white hover:bg-grey-700 cursor-pointer',
+        ]"
+      >
+        Export GPKG
+      </button>
+      <button
+        v-if="item.source === 'vector_tiles'"
+        @click="
+          () => {
+            handleExport('kml');
+          }
+        "
+        :class="[
+          'group flex w-full items-center gap-3 rounded-sm p-2 text-xs text-white hover:bg-grey-700 cursor-pointer',
+        ]"
+      >
+        Export KML
+      </button>
+      <button
+        @click="() => {}"
+        :class="[
+          'group flex w-full items-center gap-3 rounded-sm p-2 text-xs text-white hover:bg-grey-700 cursor-pointer',
+        ]"
+      >
+        About Layer
+      </button>
+      <button
+        @click="() => {}"
+        :class="[
+          'group flex w-full items-center gap-3 rounded-sm p-2 text-xs text-white hover:bg-grey-700 cursor-pointer',
+        ]"
+      >
+        Edit Layer Info
+      </button>
+      <button
+        :disabled="
+          item.source !== 'vector_tiles' && item.source !== 'external_vector'
+        "
+        @click="
                 () => {
-                  handleExport('geojson');
-                }
-              "
-              :class="[
-                active ? 'bg-grey-700' : 'bg-transparent text-grey-200',
-                'group flex w-full items-center gap-3 rounded-xxs p-2 text-xs text-white',
-              ]"
-            >
-              Export JSON
-            </button>
-          </MenuItem>
-          <MenuItem v-if="item.source === 'vector_tiles'" v-slot="{ active }">
-            <button
-              @click="
-                () => {
-                  handleExport('gpkg');
-                }
-              "
-              :class="[
-                active ? 'bg-grey-700' : 'bg-transparent text-grey-200',
-                'group flex w-full items-center gap-3 rounded-xxs p-2 text-xs text-white',
-              ]"
-            >
-              Export GPKG
-            </button>
-          </MenuItem>
-          <MenuItem v-if="item.source === 'vector_tiles'" v-slot="{ active }">
-            <button
-              @click="
-                () => {
-                  handleExport('kml');
-                }
-              "
-              :class="[
-                active ? 'bg-grey-700' : 'bg-transparent text-grey-200',
-                'group flex w-full items-center gap-3 rounded-xxs p-2 text-xs text-white',
-              ]"
-            >
-              Export KML
-            </button>
-          </MenuItem>
-          <MenuItem v-slot="{ active }">
-            <button
-              @click="() => {}"
-              :class="[
-                active ? 'bg-grey-700' : 'bg-transparent text-grey-200',
-                'group flex w-full items-center gap-3 rounded-xxs p-2 text-xs text-white',
-              ]"
-            >
-              About Layer
-            </button>
-          </MenuItem>
-          <MenuItem v-slot="{ active }">
-            <button
-              @click="() => {}"
-              :class="[
-                active ? 'bg-grey-700' : 'bg-transparent text-grey-200',
-                'group flex w-full items-center gap-3 rounded-xxs p-2 text-xs text-white',
-              ]"
-            >
-              Edit Layer Info
-            </button>
-          </MenuItem>
-          <MenuItem v-slot="{ active, close }" as="div">
-            <button
-              :disabled="item.source !== 'vector_tiles'"
-              @click="
-                () => {
-                  if(activeCollection && (activeCollection!==(item as VectorTiles).layer_name)){
-                    resetFilter()
-                  }
-                  
-                  tableDataStore.setActiveCollection((item as VectorTiles).layer_name);
+                  let tableObj = {
+                    source: item.source,
+                    label:
+                      item.source === 'vector_tiles'
+                        ? capitalizeEachWords(item.layer_name)
+                        : item.layer_alias,
+                    layer_id: item.layer_id,
+                    key:
+                      item.source === 'vector_tiles'
+                        ? item.layer_name
+                        : item.layer_id.split('_')[0],
+                  };
+                  addActiveTableList(tableObj as TableItem)
+                  setActiveTable(tableObj as TableItem)
                   toggleTable();
-                  close();
+                  open = false
                 }
               "
-              :class="[
-                active && item.source === 'vector_tiles'
-                  ? 'bg-grey-700'
-                  : 'bg-transparent text-grey-200',
-                item.source !== 'vector_tiles' ? 'text-grey-500' : 'text-white',
-                'group flex w-full items-center gap-3 rounded-xxs p-2 text-xs ',
-              ]"
-            >
-              View Data Table
-            </button>
-          </MenuItem>
-          <hr class="border-t-2 border-grey-800" />
-          <MenuItem v-slot="{ active }">
-            <button
-              @click="
-                () => {
-                  mapLayerStore.removeLayer(item);
-                }
-              "
-              :class="[
-                active
-                  ? 'bg-grey-700 text-white'
-                  : 'bg-transparent text-brand-600',
-                'group flex w-full items-center gap-3 rounded-xxs p-2 text-xs',
-              ]"
-            >
-              Delete Layer
-            </button>
-          </MenuItem>
-        </MenuItems>
-      </teleport>
-    </transition>
-  </Menu>
+        :class="[
+          item.source !== 'vector_tiles' && item.source !== 'external_vector'
+            ? 'text-grey-500'
+            : 'text-white',
+          'group flex w-full items-center gap-3 rounded-sm p-2 text-xs hover:bg-grey-700 cursor-pointer',
+        ]"
+      >
+        View Data Table
+      </button>
+      <hr class="border-t-2 border-grey-800" />
+      <button
+        @click="
+          () => {
+            mapLayerStore.removeLayer(item);
+          }
+        "
+        :class="[
+          'group flex w-full items-center gap-3 rounded-sm p-2 text-xs text-brand-600 hover:bg-grey-700 cursor-pointer',
+        ]"
+      >
+        Delete Layer
+      </button>
+    </template>
+  </UPopover>
 </template>

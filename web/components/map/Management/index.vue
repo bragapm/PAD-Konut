@@ -51,32 +51,36 @@ const handleChangeGroupOrder = () => {
     JSON.stringify(store.groupedActiveLayers)
   );
   const movedGroup = copiedGroupedActiveLayers[dragGroup.value!];
-  movedGroup.layerLists.forEach((el: LayerLists) => {
-    if (mapRefStore.map?.getLayer(el.layer_id)) {
-      mapRefStore.map?.removeLayer(el.layer_id);
-    }
-  });
+  if (movedGroup) {
+    movedGroup.layerLists.forEach((el: LayerLists) => {
+      if (mapRefStore.map?.getLayer(el.layer_id)) {
+        mapRefStore.map?.removeLayer(el.layer_id);
+      }
+    });
 
-  copiedGroupedActiveLayers.splice(dragGroup.value!, 1);
-  copiedGroupedActiveLayers.splice(dragOverGroup.value!, 0, movedGroup);
-  store.groupedActiveLayers = copiedGroupedActiveLayers;
+    copiedGroupedActiveLayers.splice(dragGroup.value!, 1);
+    copiedGroupedActiveLayers.splice(dragOverGroup.value!, 0, movedGroup);
+    store.groupedActiveLayers = copiedGroupedActiveLayers;
+  }
 };
 </script>
 
 <template>
   <h2 class="p-3 text-xs text-grey-50">Layer Management</h2>
 
-  <hr class="mx-3" />
+  <hr class="mx-3 border-grey-700" />
   <div class="p-3">
     <UInput
       v-model="filterRef"
-      color="gray"
-      :ui="{ rounded: 'rounded-xxs' }"
       placeholder="Filter"
+      class="w-full rounded-xl"
+      color="primary"
+      trailing-icon="i-heroicons-magnifying-glass"
+      variant="subtle"
     >
     </UInput>
   </div>
-  <hr class="mx-3" />
+  <hr class="mx-3 border-grey-700" />
   <!-- to do change temporary loading state -->
   <!-- <div v-if="!getgroupedLayerList" class="px-3 my-3 text-white">Loading ...</div> -->
   <div class="px-3 py-1 my-3 flex-1 overflow-y-auto">
@@ -129,7 +133,6 @@ const handleChangeGroupOrder = () => {
   <!-- to do change temporary placeholder -->
   <div class="p-3">
     <UButton
-      :ui="{ rounded: 'rounded-xxs' }"
       label="Data Catalogue"
       variant="outline"
       color="brand"

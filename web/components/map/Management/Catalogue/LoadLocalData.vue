@@ -1,5 +1,4 @@
 <script lang="ts" setup>
-import { TabGroup, TabList, Tab, TabPanels, TabPanel } from "@headlessui/vue";
 import IcSpinner from "~/assets/icons/ic-spinner.svg";
 import IcCheck from "~/assets/icons/ic-check.svg";
 import GeojsonWorker from "~/utils/worker/geojson?worker";
@@ -48,12 +47,6 @@ const { addLoadedGeoJsonData } = useIDB();
 const cancel = () => {
   emit("handleCancel");
 };
-
-const selectedTab = ref(0);
-
-function changeTab(index: number) {
-  selectedTab.value = index;
-}
 
 const getWorker = (file: File) => {
   if (file.type === "application/geo+json" || file.name.endsWith(".geojson")) {
@@ -298,21 +291,39 @@ const handleFileUpload = async (
   };
   worker.postMessage(selectedFile.value);
 };
+
+const activeStep = ref(0);
+const nextDisabled = computed(() => {
+  return activeStep.value === 0 && !selectedFile.value;
+});
+const items = computed<any[]>(() => {
+  return [
+    {
+      step: 1,
+      title: "Select File",
+      slot: "file" as const,
+    },
+    {
+      step: 2,
+      title: "Dataset Information",
+      slot: "info" as const,
+      disabled: !selectedFile.value,
+    },
+  ];
+});
+const stepper = useTemplateRef("stepper");
+
 const handleBack = () => {
-  if (selectedTab.value !== 0) {
-    changeTab(selectedTab.value - 1);
-  }
+  stepper.value?.prev();
 };
 const handleNext = () => {
-  if (selectedTab.value !== 1) {
-    changeTab(selectedTab.value + 1);
+  if (activeStep.value === 1 && selectedFile.value) {
+    handleFileUpload(
+      datasetName?.value?.value || null,
+      datasetDesc?.value?.value || null
+    );
   } else {
-    if (selectedFile.value) {
-      handleFileUpload(
-        datasetName?.value?.value || null,
-        datasetDesc?.value?.value || null
-      );
-    }
+    stepper.value?.next();
   }
 };
 </script>
@@ -322,32 +333,40 @@ const handleNext = () => {
     <div
       class="w-full h-full border border-grey-700 py-10 px-5 overflow-y-auto"
     >
-      <div v-if="!uploading && !uploaded" class="m-auto max-w-2xl space-y-2">
+      <div v-if="!uploading && !uploaded" class="m-auto max-w-2xl">
         <p class="text-grey-50">Load Local Data</p>
-        <TabGroup :selectedIndex="selectedTab" @change="changeTab">
-          <TabList class="flex gap-3 justify-evenly mb-3">
-            <Tab
-              :disabled="!selectedFile"
-              v-for="(item, index) in [
-                { step: 1, title: 'Select File' },
-                { step: 2, title: 'Dataset Information' },
+        <UStepper
+          ref="stepper"
+          v-model="activeStep"
+          :items="items"
+          :ui="{
+            separator: 'hidden',
+            trigger: 'w-full bg-transparent mb-5',
+            title: 'hidden',
+            description: 'hidden',
+            header: 'gap-3',
+          }"
+          class="my-8"
+        >
+          <template #indicator="{ item }">
+            <div
+              :class="[
+                'flex flex-col flex-1 text-2xs',
+                item.disabled ? 'text-grey-500 cursor-not-allowed opacity-50' : 'text-grey-200 cursor-pointer',
               ]"
-              v-slot="{ selected }"
-              class="flex flex-col flex-1 text-grey-200 text-2xs"
             >
               <p>{{ item.step }}</p>
               <p>{{ item.title }}</p>
               <div
                 :class="[
-                  selected ? 'bg-brand-500' : 'bg-grey-400',
-                  'h-[2px] w-full rounded-lg mt-2',
+                  item.step - 1 <= activeStep && !item.disabled ? 'bg-brand-500' : 'bg-grey-400',
+                  ' h-[2px] w-full rounded-[20px] mt-2',
                 ]"
               />
-            </Tab>
-          </TabList>
-          <hr class="border-grey-700" />
-          <TabPanels>
-            <TabPanel class="space-y-3">
+            </div>
+          </template>
+          <template #file>
+            <div class="space-y-3">
               <p class="text-sm text-grey-400">Select File</p>
               <MapManagementCatalogueLoadFileInput
                 allowed-desc="(Supported File Type: .GeoJson, .KML, .Zip)"
@@ -365,41 +384,14 @@ const handleNext = () => {
                 <p class="text-sm">Load to Loaded Data</p>
                 <p class="text-xs">
                   The file you choose from your storage will automatically be
-                  displayed and categorized as the Loaded Data on User’s
+                  displayed and categorized as the Loaded Data on User's
                   Catalogue.
                 </p>
               </div>
-              <!-- <p class="text-sm text-grey-400">Load To</p>
-              <div class="py-2">
-                <p class="text-grey-50">Loaded Data</p>
-                <p class="text-xs text-grey-400">
-                  The dataset you load from your local storage will
-                  automatically be displayed and categorized in the Loaded Data
-                  Catalogue.
-                </p>
-              </div>
-              <div class="flex flex-col gap-3">
-                <p class="text-sm text-grey-400">Data Format</p>
-                <div class="grid grid-cols-3 text-grey-400">
-                  <button
-                    v-for="item in [
-                      { format: 'geojson' },
-                      { format: 'csv' },
-                      { format: 'xls' },
-                      { format: 'kml' },
-                    ]"
-                    @click="
-                      () => {
-                        formatType = item.format;
-                      }
-                    "
-                  >
-                    {{ item.format }}
-                  </button>
-                </div>
-              </div> -->
-            </TabPanel>
-            <TabPanel class="space-y-3">
+            </div>
+          </template>
+          <template #info>
+            <div class="space-y-3">
               <p class="text-sm text-grey-400">Dataset Information</p>
               <MapManagementCatalogueLoadFileInput
                 allowed-desc="(Supported File Type: .PNG, .JPEG, .JPG)"
@@ -417,7 +409,7 @@ const handleNext = () => {
                   ref="datasetName"
                   type="text"
                   id="floating_filled"
-                  class="block rounded-xxs px-2.5 pb-2.5 pt-5 w-full text-sm text-grey-200 bg-grey-700 border border-grey-600 appearance-none focus:outline-none focus:ring-0 focus:border-grey-600 peer"
+                  class="block rounded-sm px-2.5 pb-2.5 pt-5 w-full text-sm text-grey-200 bg-grey-700 border border-grey-600 appearance-none focus:outline-none focus:ring-0 focus:border-grey-600 peer"
                   placeholder=" "
                 />
                 <label
@@ -433,7 +425,7 @@ const handleNext = () => {
                   type="text"
                   rows="5"
                   id="floating_filled"
-                  class="block rounded-xxs px-2.5 pb-2.5 pt-5 w-full text-sm text-grey-200 bg-grey-700 border border-grey-600 appearance-none focus:outline-none focus:ring-0 focus:border-grey-600 peer"
+                  class="block rounded-sm px-2.5 pb-2.5 pt-5 w-full text-sm text-grey-200 bg-grey-700 border border-grey-600 appearance-none focus:outline-none focus:ring-0 focus:border-grey-600 peer"
                   placeholder=" "
                 />
                 <label
@@ -443,9 +435,9 @@ const handleNext = () => {
                   Dataset Description
                 </label>
               </div>
-            </TabPanel>
-          </TabPanels>
-        </TabGroup>
+            </div>
+          </template>
+        </UStepper>
       </div>
       <div
         v-else-if="uploading"
@@ -473,7 +465,7 @@ const handleNext = () => {
         </div>
         <UButton
           @click="() => emit('handleSuccess')"
-          :ui="{ rounded: 'rounded-[4px]' }"
+          class="rounded-sm"
           color="brand"
           >Go To Catalogue</UButton
         >
@@ -482,31 +474,28 @@ const handleNext = () => {
     <div v-if="!uploading && !uploaded" class="flex justify-between">
       <UButton
         @click="cancel"
-        :ui="{ rounded: 'rounded-xs' }"
         label="Cancel"
         variant="outline"
         color="brand"
-        class="w-44 text-sm justify-center"
+        class="w-44 text-sm justify-center rounded-lg"
       >
       </UButton>
       <div class="space-x-2">
         <UButton
-          :disabled="selectedTab === 0"
+          :disabled="activeStep === 0"
           @click="handleBack"
-          :ui="{ rounded: 'rounded-xs' }"
           label="Back"
           variant="outline"
-          :color="selectedTab === 0 ? 'grey' : 'brand'"
-          class="w-44 text-sm justify-center"
+          :color="activeStep === 0 ? 'gray' : 'brand'"
+          class="w-44 text-sm justify-center rounded-lg"
         >
         </UButton>
         <UButton
-          :disabled="selectedTab === 0 && !selectedFile"
+          :disabled="nextDisabled"
           @click="handleNext"
-          :ui="{ rounded: 'rounded-xs' }"
-          label="Next"
-          :color="selectedTab === 0 && !selectedFile ? 'grey' : 'brand'"
-          class="w-44 text-sm justify-center"
+          :label="activeStep === 1 ? 'Load Data' : 'Next'"
+          :color="nextDisabled ? 'gray' : 'brand'"
+          class="w-44 text-sm justify-center rounded-lg"
         >
         </UButton>
       </div>

@@ -40,7 +40,7 @@ const iframeSrc = computed(() => {
 </script>
 
 <template>
-  <div class="flex flex-col gap-3 bg-grey-100 rounded-lg p-11">
+  <div class="flex flex-col gap-3 bg-grey-100 rounded-[20px] p-11">
     <p v-if="item.subtitle" class="font-medium text-lg">
       {{ item.subtitle }}
     </p>
@@ -48,7 +48,7 @@ const iframeSrc = computed(() => {
     <p class="text-grey-700">{{ item.body }}</p>
     <div
       v-if="iframeSrc"
-      class="w-full rounded-lg aspect-w-16 aspect-h-9 mt-3 overflow-hidden"
+      class="w-full rounded-[20px] aspect-w-16 aspect-h-9 mt-3 overflow-hidden"
     >
       <iframe
         class="w-full h-full"

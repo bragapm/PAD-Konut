@@ -1,5 +1,5 @@
 import os
-import shutil
+from tempfile import TemporaryDirectory
 import traceback
 
 from dramatiq.middleware import TimeLimitExceeded
@@ -10,10 +10,10 @@ from lib.register_table import (
     register_raster_tile,
 )
 from lib.dem_to_terrain_rgb import dem_to_terrain_rgb
-from utils import generate_local_temp_dir_path, pool, logger, init_gdal_config
+from utils import pool, logger, init_gdal_config
 
 
-@dramatiq.actor(store_results=True)
+@dramatiq.actor(store_results=True, time_limit=3600000)
 def raster_tiling(
     object_key: str,
     uploader: str,
@@ -31,30 +31,33 @@ def raster_tiling(
         if not bucket:
             raise Exception("S3 bucket not configured")
         init_gdal_config()
-        if is_terrain:
-            terrain_rgb_path = dem_to_terrain_rgb(bucket, object_key)
-            (layer_id, xmin, ymin, xmax, ymax, minzoom, maxzoom) = tile_raster_data(
-                bucket, minzoom, maxzoom, file_path=terrain_rgb_path
+
+        with TemporaryDirectory(prefix="geodashboard_geoprocessing_") as tmpdir:
+            if is_terrain:
+                terrain_rgb_path = dem_to_terrain_rgb(bucket, object_key, tmpdir)
+                (layer_id, xmin, ymin, xmax, ymax, minzoom, maxzoom) = tile_raster_data(
+                    bucket, minzoom, maxzoom, file_path=terrain_rgb_path
+                )
+            else:
+                (layer_id, xmin, ymin, xmax, ymax, minzoom, maxzoom) = tile_raster_data(
+                    bucket, minzoom, maxzoom, object_key
+                )
+            conn = pool.getconn()
+            register_raster_tile(
+                conn,
+                layer_id,
+                raster_alias,
+                xmin,
+                ymin,
+                xmax,
+                ymax,
+                minzoom,
+                maxzoom,
+                uploader,
+                is_terrain,
+                None,
+                additional_config,
             )
-        else:
-            (layer_id, xmin, ymin, xmax, ymax, minzoom, maxzoom) = tile_raster_data(
-                bucket, minzoom, maxzoom, object_key
-            )
-        conn = pool.getconn()
-        register_raster_tile(
-            conn,
-            layer_id,
-            raster_alias,
-            xmin,
-            ymin,
-            xmax,
-            ymax,
-            minzoom,
-            maxzoom,
-            uploader,
-            is_terrain,
-            additional_config,
-        )
         return {
             "layer_id": layer_id,
             "lon_min": xmin,
@@ -86,6 +89,3 @@ def raster_tiling(
         # cleanup
         if conn:
             pool.putconn(conn)
-        temp_dir_path = generate_local_temp_dir_path(object_key)
-        if os.path.isdir(temp_dir_path):
-            shutil.rmtree(temp_dir_path)

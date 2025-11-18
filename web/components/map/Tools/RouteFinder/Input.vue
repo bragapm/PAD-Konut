@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { refDebounced } from "@vueuse/core";
+import { useQuery } from "@tanstack/vue-query";
 import maplibregl from "maplibre-gl";
 import { orsApiKey } from "~/constants";
 import type { LngLatBoundsLike, MapMouseEvent } from "maplibre-gl";
@@ -47,34 +49,40 @@ const focused = ref(false);
 //   }
 // }
 
-async function search(q: string) {
-  if (!q) return [];
-  loading.value = true;
-  const res = await fetch(
-    "https://api.openrouteservice.org/geocode/autocomplete?boundary.country=ID&sources=openstreetmap&text=" +
-      q +
-      "&api_key=" +
-      orsApiKey
-  );
-  const result = await res.json();
-  let options = [];
-  if (result.features) {
-    for (const feature of result.features) {
-      options.push({
-        id: feature.properties.id,
-        feature: feature,
-        label:
-          feature?.properties?.name +
-          (feature?.properties?.region
-            ? ", " + feature?.properties?.region
-            : ""),
-      });
-    }
-  }
-  loading.value = false;
+const searchTerm = ref("");
+const searchTermDebounced = refDebounced(searchTerm, 200);
 
-  return options;
-}
+const {
+  isPending,
+  isError,
+  data: geocodeData,
+  isFetching: isFetchingGeocode,
+  error,
+} = useQuery({
+  queryKey: computed(() => [props.item.id, searchTermDebounced.value]),
+  queryFn: async () => {
+    const res = await $fetch<{
+      bbox: any;
+      features: any;
+      geocoding: any;
+      type: any;
+    }>(
+      "https://api.openrouteservice.org/geocode/autocomplete?boundary.country=ID&sources=openstreetmap&text=" +
+        searchTermDebounced.value +
+        "&api_key=" +
+        orsApiKey
+    );
+    console.log("res", res);
+    return res.features?.map((feature: any) => ({
+      value: feature.properties.id,
+      feature: feature,
+      label:
+        feature?.properties?.name +
+        (feature?.properties?.region ? ", " + feature?.properties?.region : ""),
+    }));
+  },
+  enabled: computed(() => searchTermDebounced.value.length > 0),
+});
 
 watchEffect(() => {
   selected.value = props.item;
@@ -149,41 +157,25 @@ watchEffect((onInvalidate) => {
     </div>
     <div class="flex-1 flex gap-2">
       <UInputMenu
+        v-model:search-term="searchTerm"
         v-model="selected"
+        :items="geocodeData"
+        :loading="isFetchingGeocode"
         @focus="handleFocused"
         @blur="blurWithDelayed"
-        @change=" (el:any) => {
+        @update:modelValue=" (el:any) => {
           updateLocations(item.id,el.feature,el.label)
           mapStore.map?.fitBounds(el.feature.bbox as LngLatBoundsLike, { maxZoom:
           17, padding: 100, }); }
         "
-        :search="search"
-        :loading="loading"
         placeholder="Search location or click on map"
-        option-attribute="label"
         trailing
-        by="id"
-        :debounce="500"
-        :popper="{ placement: 'top-end' }"
+        :content="{
+          side: 'top-start',
+        }"
         class="w-full"
-        inputClass=""
         color="gray"
-        :ui="{
-          rounded: 'rounded-xxs',
-          base: 'bg-red-500',
-        }"
-        :uiMenu="{
-          rounded: 'rounded-xxs',
-          background: 'bg-grey-700',
-          ring: 'ring-1 ring-grey-600',
-          option: {
-            base: 'cursor-pointer hover:text-grey-700',
-            selected: 'bg-grey-200 text-grey-700',
-            color: 'text-grey-200',
-            rounded: 'rounded-xxs',
-            active: 'bg-grey-200 text-grey-700',
-          },
-        }"
+        variant="subtle"
         size="xs"
       />
       <button

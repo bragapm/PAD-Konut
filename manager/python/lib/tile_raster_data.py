@@ -1,60 +1,20 @@
+import math
 import os
-import shutil
-import stat
 from uuid import uuid4
 
 from minio.deleteobjects import DeleteObject
 from osgeo import gdal, osr
-from osgeo_utils import gdal2tiles
 
 from utils import minio_client
 
 
-# override exit with error function, so when error it will raise exception instead of exit
-def raise_gdal2tiles_error(message: str, _) -> None:
-    raise gdal2tiles.Gdal2TilesError(message)
-
-
-gdal2tiles.exit_with_error = raise_gdal2tiles_error
-
-
-# override isfile function because gdal.VSIStatL returns None when file doesn't exist
-def isfile_stat_res_is_none(path: str):
-    """Wrapper for os.path.isfile() that can work with /vsi files too"""
-    if path.startswith("/vsi"):
-        stat_res = gdal.VSIStatL(path)
-        if stat_res is None:
-            return False
-        return stat.S_ISREG(stat_res.mode)
-    else:
-        return os.path.isfile(path)
-
-
-gdal2tiles.isfile = isfile_stat_res_is_none
-
-
-class GDAL2TilesOptions:
-    xyz = True
-    tiledriver = "PNG"
-    verbose = False
-    tilesize = 256
-    mpi = False
-    resampling = "average"
-    webviewer = "none"
-    kml = False
-    srcnodata = None
-    s_srs = None
-    profile = "mercator"
-    quiet = True
-    resume = False
-    exclude_transparent = True
-    # nb_processes = cpu_count()
-    excluded_values = None
-    excluded_values_pct_threshold = 50
-    nodata_values_pct_threshold = 100
-
-    def __init__(self, min_zoom: int | None = None, max_zoom: int | None = None):
-        self.zoom = (min_zoom, max_zoom)
+def get_zoom_level_for_pixel_size(pixel_size):
+    equator_z0_pixel_size = 2 * math.pi * 6378137 / 256
+    max_zoom_allowed = 22
+    for i in range(max_zoom_allowed):
+        if pixel_size > equator_z0_pixel_size / (2**i):
+            return max(0, i - 1)
+    return max_zoom_allowed
 
 
 def delete_generated_tiles(bucket: str, layer_id: str):
@@ -90,9 +50,7 @@ def tile_raster_data(
         elif min_zoom > max_zoom:
             raise Exception("Min zoom must be lower than or equal to max_zoom")
 
-    gdal2tiles_opts = GDAL2TilesOptions(min_zoom, max_zoom)
     layer_id = str(uuid4())
-
     storage_root = (
         os.environ.get("STORAGE_S3_ROOT", "") + "/"
         if os.environ.get("STORAGE_S3_ROOT")
@@ -105,59 +63,62 @@ def tile_raster_data(
     else:
         raise Exception("Neither object_key nor file_path defined")
     output_dir = f"/vsis3/{bucket}/{storage_root}raster-tiles/{layer_id}"
+    src_ds: gdal.Dataset = gdal.Open(input_file)
 
-    dataset: gdal.Dataset = gdal.Open(input_file)
-    xmin, xres, _, ymax, _, yres = dataset.GetGeoTransform()
-    xmax = xmin + (dataset.RasterXSize * xres)
-    ymin = ymax + (dataset.RasterYSize * yres)
-
-    src_srs: osr.SpatialReference = dataset.GetSpatialRef()
-    target_srs = osr.SpatialReference()
-    target_srs.ImportFromEPSG(4326)
-
-    # Transform the points
-    transform = osr.CoordinateTransformation(src_srs, target_srs)
-    transformed_bounds: tuple[float, float, float, float] = transform.TransformBounds(
+    # Get bounds in WGS84
+    xmin, xres, _, ymax, _, yres = src_ds.GetGeoTransform()
+    xmax = xmin + (src_ds.RasterXSize * xres)
+    ymin = ymax + (src_ds.RasterYSize * yres)
+    src_srs: osr.SpatialReference = src_ds.GetSpatialRef()
+    wgs84_srs = osr.SpatialReference()
+    wgs84_srs.ImportFromEPSG(4326)
+    src2wgs84 = osr.CoordinateTransformation(src_srs, wgs84_srs)
+    wgs84_bounds: tuple[float, float, float, float] = src2wgs84.TransformBounds(
         xmin, ymin, xmax, ymax, 21
     )
 
-    del transform
-    del target_srs
+    del src2wgs84
+    del wgs84_srs
     del src_srs
-    del dataset
 
-    conf, tile_details = gdal2tiles.worker_tile_details(
-        input_file, output_dir, gdal2tiles_opts
-    )
-
-    # update min max zoom
-    if min_zoom is None:
-        min_zoom = conf.tminz
-    if max_zoom is None:
-        max_zoom = conf.tmaxz
-
-    for tile_detail in tile_details:
-        gdal2tiles.create_base_tile(conf, tile_detail)
-
-    if getattr(gdal2tiles.threadLocal, "cached_ds", None):
-        del gdal2tiles.threadLocal.cached_ds
-
-    for base_tz in range(conf.tmaxz, conf.tminz, -1):
-        base_tile_groups = gdal2tiles.group_overview_base_tiles(
-            base_tz, output_dir, conf
+    # Determine min max zoom if not defined yet
+    if min_zoom is None or max_zoom is None:
+        # Transform to web mercator and save it into in memory VRT to get pixel size
+        vrt_ds: gdal.Dataset = gdal.Warp(
+            "",
+            src_ds,
+            format="VRT",
+            dstSRS="EPSG:3857",
         )
-        for base_tiles in base_tile_groups:
-            gdal2tiles.create_overview_tile(
-                base_tz, base_tiles, output_dir, conf, gdal2tiles_opts
+        _, vrtxres, _, _, _, _ = vrt_ds.GetGeoTransform()
+        if min_zoom is None:
+            min_zoom = get_zoom_level_for_pixel_size(
+                vrtxres * max(vrt_ds.RasterXSize, vrt_ds.RasterYSize) / 256
             )
-    shutil.rmtree(os.path.dirname(conf.src_file))
+        if max_zoom is None:
+            max_zoom = get_zoom_level_for_pixel_size(xres)
+
+        # handle if user defined min_zoom is larger than calculated max_zoom
+        if min_zoom > max_zoom:
+            max_zoom = min_zoom
+
+    gdal.Run(
+        "raster tile",
+        {
+            "input": src_ds,
+            "output": output_dir,
+            "min-zoom": min_zoom,
+            "max-zoom": max_zoom,
+            "webviewer": "none",
+        },
+    )
 
     return (
         layer_id,
-        transformed_bounds[1],
-        transformed_bounds[0],
-        transformed_bounds[3],
-        transformed_bounds[2],
+        wgs84_bounds[1],
+        wgs84_bounds[0],
+        wgs84_bounds[3],
+        wgs84_bounds[2],
         min_zoom,
         max_zoom,
     )

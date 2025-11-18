@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { TransitionRoot } from "@headlessui/vue";
 import IcArrowFat from "~/assets/icons/ic-arrow-fat.svg";
 import IcChart from "~/assets/icons/ic-chart.svg";
 import IcDifference from "~/assets/icons/ic-difference.svg";
@@ -23,7 +22,7 @@ const mapRefStore = useMapRef();
 const { map } = storeToRefs(mapRefStore);
 
 const toolsStore = useMapTools();
-const { showTools, showCard, activeTools, expandTools } =
+const { showTools, showSatelliteTools, showCard, activeTools, expandTools } =
   storeToRefs(toolsStore);
 const { handleCloseToolsCard, toggleExpandTools } = toolsStore;
 
@@ -38,19 +37,17 @@ const removeAllAnimation = () => {
 </script>
 
 <template>
-  <TransitionRoot
-    as="div"
-    :show="!showTable && showTools"
-    enter="transition-all duration-300"
-    enter-from="-mb-6 opacity-0"
-    enter-to="mb-0 opacity-1"
-    leave="transition-all duration-300"
-    leave-from="mb-0 opacity-1"
-    leave-to="-mb-6 opacity-0"
-    class="z-10 absolute bottom-8 left-1/2 -translate-x-1/2 rounded-xs transition-all duration-1000 ease-in-out"
+  <Transition
+    enter-active-class="transition-all duration-300"
+    enter-from-class="-translate-y-6 opacity-0"
+    enter-to-class="translate-y-0 opacity-100"
+    leave-active-class="transition-all duration-300"
+    leave-from-class="translate-y-0 opacity-100"
+    leave-to-class="-translate-y-6 opacity-0"
   >
     <div
-      class="flex gap-2 bg-grey-900 ring-1 ring-grey-700 rounded-xs p-2 transition-all duration-1000 ease-in-out"
+      v-if="!showTable && showTools"
+      class="z-10 absolute bottom-8 left-1/2 -translate-x-1/2 rounded-lg flex gap-2 bg-grey-900 ring-1 ring-grey-700 p-2"
     >
       <MapToolsDropdown
         :triggerLabel="'Analytic Tools'"
@@ -186,7 +183,21 @@ const removeAllAnimation = () => {
         <IcArrowFat class="w-4 h-4 text-grey-400" :fontControlled="false" />
       </button>
     </div>
-  </TransitionRoot>
+  </Transition>
+  <Transition
+    enter-active-class="transition-all duration-300"
+    enter-from-class="-translate-y-6 opacity-0"
+    enter-to-class="translate-y-0 opacity-100"
+    leave-active-class="transition-all duration-300"
+    leave-from-class="translate-y-0 opacity-100"
+    leave-to-class="-translate-y-6 opacity-0"
+  >
+    <div
+      v-if="!showTable && showSatelliteTools"
+      class="z-10 absolute bottom-8 left-1/2 -translate-x-1/2 rounded-lg flex gap-2 bg-grey-900 ring-1 ring-grey-700 p-2"
+    >
+      <MapToolsSatellite /></div
+  ></Transition>
   <MapToolsCard
     :active="showCard"
     :onClose="handleCloseToolsCard"
