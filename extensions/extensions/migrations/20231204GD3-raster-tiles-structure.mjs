@@ -8,7 +8,7 @@ export async function up(knex) {
     INSERT INTO directus_folders(id,name)
     VALUES
       ('${COG_DATA_FOLDER_ID}','COG Data'),
-      ('${LAYER_PREVIEWS_FOLDER_ID}','Layer Previews');
+      ('${LAYER_PREVIEWS_FOLDER_ID}','Layer Previews')
     ON CONFLICT (id) DO NOTHING;
 
     CREATE TABLE IF NOT EXISTS raster_tiles (
