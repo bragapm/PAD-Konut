@@ -9,6 +9,7 @@ export async function up(knex) {
     VALUES
       ('${COG_DATA_FOLDER_ID}','COG Data'),
       ('${LAYER_PREVIEWS_FOLDER_ID}','Layer Previews');
+    ON CONFLICT (id) DO NOTHING;
 
     CREATE TABLE IF NOT EXISTS raster_tiles (
       layer_id uuid NOT NULL PRIMARY KEY,
