@@ -1,0 +1,30 @@
+{
+  "name": "braga-extensions",
+  "version": "1.0.0",
+  "scripts": {
+    "bootstrap": "directus bootstrap",
+    "start": "directus start",
+    "migrate:up": "directus database migrate:up",
+    "migrate:down": "directus database migrate:down",
+    "build:app": "rollup --config rollup.config.app.mjs",
+    "build": "rollup --config && rollup --config rollup.config.app.mjs && mkdir -p dist/modules/api-viewer && cp extensions/modules/api-viewer/index.js dist/modules/api-viewer/index.js",
+    "dev": "rollup --config --watch --no-minify"
+  },
+  "author": "Braga Technologies",
+  "license": "ISC",
+  "devDependencies": {
+    "directus": "10.8.2"
+  },
+  "dependencies": {
+    "@directus/errors": "^0.2.0",
+    "@rollup/plugin-commonjs": "^25.0.7",
+    "@rollup/plugin-json": "^6.1.0",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@vitejs/plugin-vue": "^5.1.4",
+    "minio": "^7.1.3",
+    "rollup": "^4.9.4",
+    "rollup-plugin-styles": "^4.0.0"
+  },
+  "packageManager": "pnpm@8.14.0"
+}
