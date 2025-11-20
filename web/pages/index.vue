@@ -259,6 +259,7 @@ const resetMapView = () => {
           <IcBasemap class="w-5 h-5" :fontControlled="false" />
         </MapButtonControl>
       </CoreTooltip>
+      <!--
       <CoreTooltip text="Satellite Data">
         <MapButtonControl
           @click="
@@ -269,6 +270,8 @@ const resetMapView = () => {
           <IcSatellite class="w-5 h-5" :fontControlled="false" />
         </MapButtonControl>
       </CoreTooltip>
+      -->
+
       <CoreTooltip v-if="activeTable" text="Data Table">
         <MapButtonControl @click="toggleTable" :active="showTable">
           <IcTable class="w-5 h-5" :fontControlled="false" />

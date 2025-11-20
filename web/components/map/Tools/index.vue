@@ -49,15 +49,16 @@ const removeAllAnimation = () => {
       v-if="!showTable && showTools"
       class="z-10 absolute bottom-8 left-1/2 -translate-x-1/2 rounded-lg flex gap-2 bg-grey-900 ring-1 ring-grey-700 p-2"
     >
+      <!-- 
       <MapToolsDropdown
-        :triggerLabel="'Analytic Tools'"
-        :triggerIcon="IcChart"
-        :itemLabel="'Analytic Tools'"
-        :itemDescription="'Geospatial Analytic Tools to draw Insights from the Map.'"
-        :items="[
-          {
-            id: 'advanced_insight',
-            label: 'Advanced Insight',
+      :triggerLabel="'Analytic Tools'"
+      :triggerIcon="IcChart"
+      :itemLabel="'Analytic Tools'"
+      :itemDescription="'Geospatial Analytic Tools to draw Insights from the Map.'"
+      :items="[
+      {
+        id: 'advanced_insight',
+        label: 'Advanced Insight',
             icon: IcTools,
           },
           {
@@ -75,8 +76,9 @@ const removeAllAnimation = () => {
             label: 'Route Finder',
             icon: IcRoute,
           },
-        ]"
+          ]"
       ></MapToolsDropdown>
+      -->
       <MapToolsDropdown
         :triggerLabel="'Advanced Search'"
         :triggerIcon="IcSearch"
@@ -86,18 +88,21 @@ const removeAllAnimation = () => {
             label: 'Find Coordinate',
             icon: IcDrawFree,
           },
+          /*
           {
             id: 'administrative_area',
-            label: 'Administration Area',
-            icon: IcDrawSquare,
-          },
-          {
-            id: 'building_number',
-            label: 'Building Number',
-            icon: IcRoute,
-          },
+              label: 'Administration Area',
+              icon: IcDrawSquare,
+            },
+            {
+              id: 'building_number',
+              label: 'Building Number',
+              icon: IcRoute,
+            },
+            */
         ]"
       ></MapToolsDropdown>
+      <!--
       <MapToolsDropdown
         :triggerLabel="'Geoprocessing'"
         :triggerIcon="IcMapLayerB"
@@ -139,6 +144,8 @@ const removeAllAnimation = () => {
           },
         ]"
       ></MapToolsDropdown>
+      -->
+
       <div class="border-l border-grey-700 h-8"></div>
       <MapToolsDropdown
         :triggerIcon="IcRuler"
