@@ -370,7 +370,7 @@ export const useMapLayer = defineStore("maplayer", () => {
             data: LayerConfigLists;
           }>([
             $fetch(
-              "/panel/items/vector_tiles?fields=layer_id,layer_name,geometry_type,bounds,minzoom,maxzoom,layer_alias,hover_popup_columns,click_popup_columns,image_columns,active,description,preview,category.*,fill_style.*,line_style.*,circle_style.*,symbol_style.*&filter[active][_eq]=true&sort=layer_name",
+              "/panel/items/vector_tiles?fields=layer_id,layer_name,geometry_type,bounds,minzoom,maxzoom,layer_alias,hover_popup_columns,click_popup_columns,image_columns,active,description,preview,category.*,fill_style.*,line_style.*,circle_style.*,symbol_style.*.*&filter[active][_eq]=true&sort=layer_name",
               {
                 method: "GET",
                 headers: {

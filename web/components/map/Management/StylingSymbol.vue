@@ -14,6 +14,8 @@ const layerIndex = inject("layerIndexProvider");
 
 const symbolStyle = props.layerItem.layer_style as SymbolStyles;
 
+console.log("SYMBOL STYLE", symbolStyle);
+
 // Extract attribute from layout_icon_image once
 const layoutIconImage = symbolStyle.layout_icon_image;
 const extractedAttribute = extractAttributeFromExpression(layoutIconImage);
@@ -35,9 +37,7 @@ const styleType = ref<"simple" | "categorical">(
 const defaultIconImageId = "1270a394-f07a-46eb-8aeb-2bc838ccb74f";
 
 const iconImage = ref<string>(
-  symbolStyle.layout_icon_image?.startsWith("[")
-    ? defaultIconImageId
-    : symbolStyle.layout_icon_image ?? defaultIconImageId
+  symbolStyle.layout_icon_image?.id ?? defaultIconImageId
 );
 
 const store = useMapLayer();

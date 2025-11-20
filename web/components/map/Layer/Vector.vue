@@ -260,33 +260,26 @@ watchEffect(async () => {
 
         // FOR FILTER LAYER
         // Always ensure _filter source exists
-        const filterSourceId = props.item.layer_name + "_filter";
-        if (
-          !map.value.getSource(filterSourceId) &&
-          props.item.layer_name === "perusahaan_simpel"
-        ) {
-          map.value.addSource(filterSourceId, {
-            type: "vector",
-            tiles: [
-              `${window.location.origin}/panel/mvt/${
-                props.item.layer_name
-              }?z={z}&x={x}&y={y}${
-                authStore.accessToken
-                  ? "&access_token=" + authStore.accessToken
-                  : ""
-              }`,
-            ],
-            minzoom: props.item.minzoom || 5,
-            maxzoom: props.item.maxzoom || 15,
-          });
-          // // ADDING INTO OUR LAYER STORE TO ENSURE THIS COULD BE SHOWN ON POPUP
-          // const layerFilter = {
-          //   ...props.item,
-          //   layer_id: props.item.layer_name + "_filter",
-          // };
-
-          // mapLayerStore.addLayer(layerFilter);
-        }
+        // const filterSourceId = props.item.layer_name + "_filter";
+        // if (
+        //   !map.value.getSource(filterSourceId) &&
+        //   props.item.layer_name === "perusahaan_simpel"
+        // ) {
+        //   map.value.addSource(filterSourceId, {
+        //     type: "vector",
+        //     tiles: [
+        //       `${window.location.origin}/panel/mvt/${
+        //         props.item.layer_name
+        //       }?z={z}&x={x}&y={y}${
+        //         authStore.accessToken
+        //           ? "&access_token=" + authStore.accessToken
+        //           : ""
+        //       }`,
+        //     ],
+        //     minzoom: props.item.minzoom || 5,
+        //     maxzoom: props.item.maxzoom || 15,
+        //   });
+        // }
 
         // ✅ Ensure main (layer_id) source exists
         if (!map.value.getSource(props.item.layer_id)) {
@@ -370,11 +363,7 @@ watchEffect(async () => {
       }
     }
 
-    if (
-      !map.value.getLayer(props.item.layer_id) ||
-      !map.value.getLayer(props.item.layer_name) ||
-      !map.value.getLayer(`${props.item.layer_name}_filter`)
-    ) {
+    if (!map.value.getLayer(props.item.layer_id)) {
       let beforeId: undefined | string = undefined;
       if (props.order !== 0) {
         let order = props.order;
@@ -509,6 +498,8 @@ watchEffect(async () => {
         Object.keys(props.item.layer_style).forEach((key) => {
           const [category, ...nameStrings] = key.split("_");
 
+          // console.log("LAYER STYLE", props.item.layer_style);
+
           if (
             category === "paint" &&
             props.item.layer_style?.[key as keyof typeof props.item.layer_style]
@@ -557,6 +548,12 @@ watchEffect(async () => {
             layout["icon-image"] = (
               props.item.layer_style as SymbolStylesAdjusted
             )[key as keyof SymbolStylesAdjusted];
+          } else if (key === "layout_icon_image") {
+            const img = (props.item.layer_style as any).layout_icon_image;
+
+            if (img && img.id) {
+              layout["icon-image"] = img.id;
+            }
           }
         });
 
@@ -591,6 +588,8 @@ watchEffect(async () => {
         //   layout["text-offset"]= [0, 6];
 
         // }
+
+        // console.log("LAYOUT SYMBOL AT VECTOR", layout);
 
         const layer: AddLayerObject = {
           id: props.item.layer_id,
@@ -650,38 +649,16 @@ watchEffect(async () => {
             },
           });
 
-          // FIXED: Add filter layer - MOVED INSIDE CLUSTERED CONDITION
-          // Use the exact same source layer name as other layers
-          const filterLayerId = `${props.item.layer_name}_filter`;
-          console.log("🟡 Adding filter layer:", filterLayerId);
-
-          map.value.addLayer(
-            {
-              id: filterLayerId, // FIXED: No extra quotes
-              source: `${props.item.layer_name}_filter`, // Use the filter source we created
-              "source-layer": props.item.layer_name, // Use the exact source layer name
-              type: "symbol",
-              filter: ["==", ["get", "count"], 1], // Same filter as main layer
-              layout: {
-                "icon-allow-overlap": true,
-                "icon-image": (props.item.layer_style as SymbolStyles)
-                  .layout_icon_image.id, // Use same icon as main layer
-                visibility: "visible",
-              },
-            },
-            beforeId
-          );
-
           // Debug: Verify the layer was added
-          setTimeout(() => {
-            const addedLayer = map.value.getLayer(filterLayerId);
-            console.log("✅ Filter layer verification:", {
-              layerId: filterLayerId,
-              exists: !!addedLayer,
-              source: addedLayer?.source,
-              sourceLayer: (addedLayer as any)?.["source-layer"],
-            });
-          }, 100);
+          // setTimeout(() => {
+          //   const addedLayer = map.value.getLayer(filterLayerId);
+          //   console.log("✅ Filter layer verification:", {
+          //     layerId: filterLayerId,
+          //     exists: !!addedLayer,
+          //     source: addedLayer?.source,
+          //     sourceLayer: (addedLayer as any)?.["source-layer"],
+          //   });
+          // }, 100);
         } else {
           if (layer.id === "reports") {
             layer.paint!["circle-color"] = "#fc2003"; // Simple red color

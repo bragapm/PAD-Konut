@@ -92,7 +92,9 @@ watchEffect((onInvalidate) => {
           layerId: feature.layer.id,
           layerType: feature.layer.type,
           tableName: (foundLayer as ExternalVector).layer_alias,
-          rowId: feature.id,
+          rowId:
+            feature.id ?? feature.properties.ogc_fid ?? feature.properties.id,
+
           data: { ...feature.properties, geom: feature.geometry },
           clickPopupColumns: (foundLayer as ExternalVector).click_popup_columns,
         };
@@ -101,7 +103,9 @@ watchEffect((onInvalidate) => {
           layerId: feature.layer.id,
           layerType: feature.layer.type,
           tableName: feature.sourceLayer,
-          rowId: feature.id,
+          rowId:
+            feature.id ?? feature.properties.ogc_fid ?? feature.properties.id,
+
           clickPopupColumns: (foundLayer as VectorTiles).click_popup_columns,
           featureDetailColumns: (foundLayer as VectorTiles)
             .feature_detail_columns,
