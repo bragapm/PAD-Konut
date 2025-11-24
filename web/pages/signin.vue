@@ -73,15 +73,23 @@ const handleSignin = async (event: FormSubmitEvent<SigninData>) => {
           class="flex flex-col bg-grey-800 rounded-[20px] h-full px-16 py-8 overflow-y-auto justify-center"
         >
           <div class="flex flex-col text-center space-y-3 mb-16">
-            <IcLogoGeodashboardFull
-              class="h-5 w-full text-grey-50 mb-4"
-              :fontControlled="false"
+            <NuxtImg
+              v-if="generalSettingsData?.data?.project_logo_horizontal"
+              provider="directus"
+              :src="generalSettingsData?.data?.project_logo_horizontal"
+              class="h-10 max-w-56 object-contain object-center"
             />
+            <p
+              v-if="mapData?.data?.expand_title"
+              class="whitespace-nowrap text-sm font-medium text-white"
+            >
+              {{ mapData?.data.expand_title }}
+            </p>
             <h1 class="text-4xl font-medium text-grey-50">
               Welcome to {{ mapData?.data.title || "GeoDashboard" }}
             </h1>
             <p class="text-grey-500 text-sm">
-              Sign In to continue your mapping journey with us!
+              Sign In to manage and visualize regional assets seamlessly!
             </p>
           </div>
           <UForm
@@ -157,7 +165,7 @@ const handleSignin = async (event: FormSubmitEvent<SigninData>) => {
             </template>
           </UButton>
           <p class="text-center text-grey-500 text-sm">
-            ©{{ new Date().getFullYear() }} Braga Technologies
+            ©{{ new Date().getFullYear() }} Pemerintah Daerah Konawe Utara
           </p>
         </div>
       </div>

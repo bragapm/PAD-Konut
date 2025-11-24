@@ -23,7 +23,9 @@ const generalErrorMessage = ref("");
 const showPassword = ref(false);
 const isLoading = ref(false);
 
-const validateSigninData = (state: SigninData): FormError<keyof SigninData>[] => {
+const validateSigninData = (
+  state: SigninData
+): FormError<keyof SigninData>[] => {
   const errors: FormError<keyof SigninData>[] = [];
   if (!state.email) errors.push({ name: "email", message: "Required" });
   if (!state.password) errors.push({ name: "password", message: "Required" });
@@ -47,7 +49,11 @@ const handleSignin = async (event: FormSubmitEvent<SigninData>) => {
   try {
     const { data } = await $fetch<{ data: AuthPayload }>("/panel/auth/login", {
       method: "POST",
-      body: { email: event.data.email, password: event.data.password, mode: "cookie" },
+      body: {
+        email: event.data.email,
+        password: event.data.password,
+        mode: "cookie",
+      },
     });
     signin(data.access_token);
     setTimeout(tryRefresh, data.expires - 1000);
@@ -61,7 +67,8 @@ const handleSignin = async (event: FormSubmitEvent<SigninData>) => {
 };
 
 const currentYear = new Date().getFullYear();
-const googleIconUrl = "https://lh3.googleusercontent.com/COxitqgJr1sJnIDe8-jiKhxDx1FrYbtRHKJ9z_hELisAlapwE9LUPh6fcXIfb5vwpbMl4xl9H9TRFPc5NOO8Sb3VSgIBrfRYvW6cUA";
+const googleIconUrl =
+  "https://lh3.googleusercontent.com/COxitqgJr1sJnIDe8-jiKhxDx1FrYbtRHKJ9z_hELisAlapwE9LUPh6fcXIfb5vwpbMl4xl9H9TRFPc5NOO8Sb3VSgIBrfRYvW6cUA";
 </script>
 
 <template>
@@ -72,14 +79,11 @@ const googleIconUrl = "https://lh3.googleusercontent.com/COxitqgJr1sJnIDe8-jiKhx
   >
     <template #content>
       <div class="flex min-h-full items-center justify-center text-center">
-        <div
-          @click="authStore.authModal = false"
-          class="absolute inset-0"
-        />
+        <div @click="authStore.authModal = false" class="absolute inset-0" />
         <div
           :class="[
             'z-10 transform overflow-hidden rounded-xl shadow-xl transition-all mx-6 w-full',
-            isExpand ? 'mt-24' : 'mt-12'
+            isExpand ? 'mt-24' : 'mt-12',
           ]"
         >
           <div
@@ -94,15 +98,23 @@ const googleIconUrl = "https://lh3.googleusercontent.com/COxitqgJr1sJnIDe8-jiKhx
                 class="bg-grey-800 rounded-[20px] h-full px-16 overflow-y-auto"
               >
                 <div class="flex flex-col text-center space-y-3 mb-16 mt-8">
-                  <IcLogoGeodashboardFull
-                    class="h-5 w-full text-grey-50 mb-4"
-                    :fontControlled="false"
+                  <NuxtImg
+                    v-if="generalSettingsData?.data?.project_logo_horizontal"
+                    provider="directus"
+                    :src="generalSettingsData?.data?.project_logo_horizontal"
+                    class="h-10 object-contain object-center"
                   />
+                  <p
+                    v-if="mapData?.data?.expand_title"
+                    class="whitespace-nowrap text-sm font-medium text-white"
+                  >
+                    {{ mapData?.data.expand_title }}
+                  </p>
                   <h1 class="text-4xl font-medium text-grey-50">
                     Welcome to {{ mapData?.data.title || "GeoDashboard" }}
                   </h1>
                   <p class="text-grey-500 text-sm">
-                    Sign In to continue your mapping journey with us!
+                    Sign In to manage and visualize regional assets seamlessly!
                   </p>
                 </div>
                 <UForm
@@ -177,15 +189,11 @@ const googleIconUrl = "https://lh3.googleusercontent.com/COxitqgJr1sJnIDe8-jiKhx
                   :disabled="isLoading"
                 >
                   <template #leading>
-                    <img
-                      :src="googleIconUrl"
-                      alt="Google"
-                      class="h-5"
-                    />
+                    <img :src="googleIconUrl" alt="Google" class="h-5" />
                   </template>
                 </UButton>
                 <p class="text-center text-grey-500 text-sm mb-8">
-                  ©{{ currentYear }} Braga Technologies
+                  ©{{ currentYear }} Pemerintah Daerah Konawe Utara
                 </p>
               </div>
             </div>
