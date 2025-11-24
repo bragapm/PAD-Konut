@@ -5,6 +5,8 @@ branch-defaults:
     environment: konawe-utara-geodashboard-env
   main:
     environment: konawe-utara-geodashboard-env
+  pad-konut:
+    environment: konawe-utara-geodashboard-env
 deploy:
   artifact: ./.elasticbeanstalk/my-app.zip
 environment-defaults:
