@@ -398,6 +398,7 @@ export type MapData = {
   data: {
     title: string;
     subtitle: string;
+    expand_title:string;
     information: string;
     initial_map_view: GeoJSON.Feature;
     information_attachments?: Attachment[];

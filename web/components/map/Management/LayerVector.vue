@@ -2,6 +2,8 @@
 import IcEye from "~/assets/icons/ic-eye.svg";
 import IcEyeCrossed from "~/assets/icons/ic-eye-crossed.svg";
 import IcMarkerStyle from "~/assets/icons/ic-marker-style.svg";
+import IcPalette from "~/assets/icons/ic-palette.svg";
+import IcTime from "~/assets/icons/ic-time.svg";
 import type {
   LineStyles,
   FillStyles,
@@ -68,6 +70,7 @@ const layerIndex = computed(() => {
 provide("layerIndexProvider", layerIndex.value);
 
 const isShowStyling = ref(false);
+const isShowTime = ref(false);
 const visibility = ref<string>(
   props.layerItem.layer_style.layout_visibility ?? "visible"
 );
@@ -186,9 +189,26 @@ const toggleVisibility = () => {
       <div class="flex gap-2 items-center justify-end">
         <button
           :disabled="visibility === 'none'"
+          @click="isShowTime = !isShowTime"
+        >
+          <IcTime
+            :class="[
+              visibility === 'visible'
+                ? isShowTime
+                  ? 'text-brand-500'
+                  : 'text-grey-400'
+                : 'text-grey-500',
+              ,
+              'w-3 h-3',
+            ]"
+            :fontControlled="false"
+          />
+        </button>
+        <button
+          :disabled="visibility === 'none'"
           @click="isShowStyling = !isShowStyling"
         >
-          <IcMarkerStyle
+          <IcPalette
             :class="[
               visibility === 'visible'
                 ? isShowStyling

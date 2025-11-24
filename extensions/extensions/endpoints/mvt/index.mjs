@@ -17,7 +17,7 @@ export default (router, { database, logger, env }) => {
 
   router.get("/:layerName", async (req, res, next) => {
       const { accountability } = req;
-      let { z, x, y } = req.query;
+      let { z, x, y, ...rest } = req.query;
       const { layerName } = req.params;
 
       // Check if the user has permission to access the requested layer
@@ -38,8 +38,14 @@ export default (router, { database, logger, env }) => {
         return next(new InvalidQueryError({ reason: "Invalid z, x, y" }));
       }
 
+      if ("access_token" in rest) {
+        delete rest.access_token;
+      }
+
       // Generate a unique cache key for the requested tile
-      const cacheKey = `mvt_${layerName}_${z}_${x}_${y}`;
+      const cacheKey = `mvt_${layerName}_${Object.values(rest).join(
+        "_"
+      )}_${z}_${x}_${y}`;
 
       // Attempt to retrieve the tile from cache
       try {
@@ -74,7 +80,16 @@ export default (router, { database, logger, env }) => {
             "label_columns",
             "cache_duration"
           )
-          .where("layer_name", layerName)
+        .where(
+          "layer_name",
+          isNotEmptyObject(rest)
+            ? layerName +
+                "?" +
+                Object.keys(rest)
+                  .map((key) => `${key}=${rest[key]}`)
+                  .join("&")
+            : layerName
+        )
           .first();
       } catch (error) {
         logger.error(error);
@@ -147,6 +162,15 @@ export default (router, { database, logger, env }) => {
           SELECT ST_AsMVTGeom(ST_Transform(main.geom, 3857), tile, 512) geom, ${idColumn} ${classColumnParam}
           FROM ?? main
           INNER JOIN tile_envelope ON main.geom && ST_Transform(tile, 4326)
+                  ${
+          isNotEmptyObject(rest)
+            ? "WHERE " +
+              Object.keys(rest)
+                .map((key) => `main.${key} = '${rest[key]}'`)
+                .join(" AND ")
+            : ""
+        }
+      )
         )
         SELECT ST_AsMVT(mvtgeom_table, ?, 512, 'geom') mvt_buff
         FROM mvtgeom_table

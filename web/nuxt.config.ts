@@ -43,8 +43,8 @@ export default defineNuxtConfig({
         proxy:
           process.env.NODE_ENV === "production"
             ? "http://directus:8055/**"
-            // : "https://konawe-utara.geodashboard.io/panel/**",
-        : "http://localhost:8055/**",
+            : "https://konawe-utara.geodashboard.io/panel/**",
+        // : "http://localhost:8055/**",
       },
     },
   },

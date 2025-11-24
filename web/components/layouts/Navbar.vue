@@ -103,6 +103,12 @@ const updateExpand = (value: boolean) => {
             :src="generalSettingsData?.data?.project_logo_horizontal"
             class="h-10 max-w-56 object-contain object-center"
           />
+          <p
+            v-if="mapData?.data?.expand_title"
+            class="whitespace-nowrap text-sm font-medium text-white"
+          >
+            {{ mapData?.data.expand_title }}
+          </p>
           <Transition
             enter-active-class="transition-opacity duration-100"
             enter-from-class="opacity-0"
@@ -152,7 +158,10 @@ const updateExpand = (value: boolean) => {
         leave-from-class="opacity-100"
         leave-to-class="opacity-0"
       >
-        <div v-if="isExpand" class="absolute right-0 flex items-center gap-2 px-3">
+        <div
+          v-if="isExpand"
+          class="absolute right-0 flex items-center gap-2 px-3"
+        >
           <UButton label="Share Map" color="primary">
             <template #trailing>
               <IcLink class="text-base" />
@@ -200,7 +209,7 @@ const updateExpand = (value: boolean) => {
               id="auto-scroll"
               @mouseover="startScroll"
               @mouseout="refreshScroll"
-              class="hide-scrollbar whitespace-nowrap text-sm w-64 overflow-auto select-none"
+              class="hide-scrollbar whitespace-nowrap text-sm w-64 text-grey-400 overflow-auto select-none"
             >
               {{ mapData?.data.subtitle }}
             </p>
