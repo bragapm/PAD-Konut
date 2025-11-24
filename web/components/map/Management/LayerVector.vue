@@ -187,7 +187,7 @@ const toggleVisibility = () => {
         </p>
       </div>
       <div class="flex gap-2 items-center justify-end">
-        <button
+        <!-- <button
           :disabled="visibility === 'none'"
           @click="isShowTime = !isShowTime"
         >
@@ -203,7 +203,7 @@ const toggleVisibility = () => {
             ]"
             :fontControlled="false"
           />
-        </button>
+        </button> -->
         <button
           :disabled="visibility === 'none'"
           @click="isShowStyling = !isShowStyling"
