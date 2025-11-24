@@ -286,13 +286,14 @@ watchEffect(async () => {
           map.value.addSource(props.item.layer_id, {
             type: "vector",
             tiles: [
-              `${window.location.origin}${endpoint}${
-                props.item.layer_name
-              }?z={z}&x={x}&y={y}${
-                authStore.accessToken
+              window.location.origin +
+                endpoint +
+                props.item.layer_name +
+                (props.item.layer_name.includes("?") ? "&" : "?") +
+                "z={z}&x={x}&y={y}" +
+                (authStore.accessToken
                   ? "&access_token=" + authStore.accessToken
-                  : ""
-              }`,
+                  : ""),
             ],
             minzoom: props.item.minzoom || 5,
             maxzoom: props.item.maxzoom || 15,
@@ -354,10 +355,10 @@ watchEffect(async () => {
           window.location.origin +
             endpoint +
             props.item.layer_name +
-            "?z={z}&x={x}&y={y}" +
-            (authStore.accessToken
-              ? "&access_token=" + authStore.accessToken
-              : ""),
+            (props.item.layer_name.includes("?") ? "&" : "?") +
+            "z={z}&x={x}&y={y}" +
+            "&access_token=" +
+            authStore.accessToken,
         ]);
         currentToken.value = authStore.accessToken;
       }
@@ -442,7 +443,8 @@ watchEffect(async () => {
           map.value.addLayer({
             id: `${props.item.layer_id}-cluster`,
             source: props.item.layer_id,
-            "source-layer": props.item.layer_name,
+            "source-layer": props.item.layer_name.split("?")[0],
+
             type: "circle",
             filter: [">", ["get", "count"], 1],
             paint: clusterPaint,
@@ -454,7 +456,8 @@ watchEffect(async () => {
           map.value.addLayer({
             id: `${props.item.layer_id}-label`,
             source: props.item.layer_id,
-            "source-layer": props.item.layer_name,
+            "source-layer": props.item.layer_name.split("?")[0],
+
             type: "symbol",
             filter: [">", ["get", "count"], 1],
 
@@ -472,7 +475,8 @@ watchEffect(async () => {
           map.value.addLayer({
             id: props.item.layer_id,
             source: props.item.layer_id,
-            "source-layer": props.item.layer_name,
+            "source-layer": props.item.layer_name.split("?")[0],
+
             type: "symbol",
             filter: ["==", ["get", "count"], 1],
             layout: {
@@ -487,7 +491,7 @@ watchEffect(async () => {
           }
 
           if (props.item.source === "vector_tiles") {
-            layer["source-layer"] = props.item.layer_name;
+            layer["source-layer"] = props.item.layer_name.split("?")[0];
           }
           map.value.addLayer(layer, beforeId || undefined);
         }
@@ -607,7 +611,8 @@ watchEffect(async () => {
           map.value.addLayer({
             id: `${props.item.layer_id}-cluster`,
             source: props.item.layer_id,
-            "source-layer": props.item.layer_name,
+            "source-layer": props.item.layer_name.split("?")[0],
+
             type: "circle",
             filter: [">", ["get", "count"], 1],
             paint: clusterPaint,
@@ -619,7 +624,8 @@ watchEffect(async () => {
           map.value.addLayer({
             id: `${props.item.layer_id}-label`,
             source: props.item.layer_id,
-            "source-layer": props.item.layer_name,
+            "source-layer": props.item.layer_name.split("?")[0],
+
             type: "symbol",
             filter: [">", ["get", "count"], 1],
 
@@ -637,7 +643,8 @@ watchEffect(async () => {
           map.value.addLayer({
             id: props.item.layer_id,
             source: props.item.layer_id,
-            "source-layer": props.item.layer_name,
+            "source-layer": props.item.layer_name.split("?")[0],
+
             type: "symbol",
             filter: ["==", ["get", "count"], 1],
 
@@ -665,7 +672,7 @@ watchEffect(async () => {
           }
 
           if (props.item.source === "vector_tiles") {
-            layer["source-layer"] = props.item.layer_name;
+            layer["source-layer"] = props.item.layer_name.split("?")[0];
           }
           map.value.addLayer(layer, beforeId || undefined);
         }
@@ -718,7 +725,7 @@ watchEffect(async () => {
           maxzoom: props.item.maxzoom || 15,
         };
         if (props.item.source === "vector_tiles") {
-          layer["source-layer"] = props.item.layer_name;
+          layer["source-layer"] = props.item.layer_name.split("?")[0];
         }
         map.value.addLayer(layer, beforeId || undefined);
       } else if (props.item.geometry_type === geomTypeLine) {
@@ -760,7 +767,7 @@ watchEffect(async () => {
           maxzoom: props.item.maxzoom || 15,
         };
         if (props.item.source === "vector_tiles") {
-          layer["source-layer"] = props.item.layer_name;
+          layer["source-layer"] = props.item.layer_name.split("?")[0];
         }
         map.value.addLayer(layer, beforeId || undefined);
       }

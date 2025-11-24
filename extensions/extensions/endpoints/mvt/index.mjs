@@ -24,6 +24,8 @@ export default (router, { database, logger, env }) => {
       let { z, x, y, ...rest } = req.query;
       const { layerName } = req.params;
 
+      console.log('REST', rest)
+
       // Check if the user has permission to access the requested layer
       if (
         !accountability.admin &&
@@ -166,7 +168,7 @@ export default (router, { database, logger, env }) => {
           SELECT ST_AsMVTGeom(ST_Transform(main.geom, 3857), tile, 512) geom, ${idColumn} ${classColumnParam}
           FROM ?? main
           INNER JOIN tile_envelope ON main.geom && ST_Transform(tile, 4326)
-                  ${
+          ${
           isNotEmptyObject(rest)
             ? "WHERE " +
               Object.keys(rest)
@@ -174,13 +176,14 @@ export default (router, { database, logger, env }) => {
                 .join(" AND ")
             : ""
         }
-      )
         )
         SELECT ST_AsMVT(mvtgeom_table, ?, 512, 'geom') mvt_buff
         FROM mvtgeom_table
       `;
 
       // Execute the query and send the result
+
+      console.log('MVT QUERY', mvtQuery)
       try {
         const result = await database.raw(mvtQuery, [
           ...queryParams,
