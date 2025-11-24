@@ -5,6 +5,10 @@ import {
 } from "@directus/errors";
 // import * as clusterbusterImport from "clusterbuster";
 
+export function isNotEmptyObject(obj) {
+  return obj && Object.keys(obj).length > 0 && obj.constructor === Object;
+}
+
 export default (router, { database, logger, env }) => {
   // const TileServer =
   //   clusterbusterImport.TileServer ?? clusterbusterImport.default?.TileServer;
