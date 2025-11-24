@@ -1,7 +1,7 @@
 name: EB deploy
 on:
   push:
-    branches: [latest]
+    branches: [pad-konut]
 jobs:
   deploy:
     runs-on: ubuntu-latest
