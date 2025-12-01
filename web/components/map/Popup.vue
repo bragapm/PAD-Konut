@@ -83,6 +83,17 @@ watchEffect((onInvalidate) => {
       layers: filterLayers?.map(({ layer_id }) => layer_id),
     });
 
+    const kecamatanLayers = mapLayerStore.groupedActiveLayers
+      ?.map(({ layerLists }) => layerLists)
+      .flat();
+
+    const kecamatanFeatures = map.value!.queryRenderedFeatures(
+      point as PointLike,
+      {
+        layers: kecamatanLayers?.map(({ layer_id }) => layer_id),
+      }
+    );
+
     const featureList = features.map((feature: MapGeoJSONFeature) => {
       const foundLayer = filterLayers?.find(
         (layer) => layer.layer_id === feature.layer.id
@@ -113,6 +124,20 @@ watchEffect((onInvalidate) => {
         };
       }
     });
+
+    console.log("KECAMATAN LAYERS", kecamatanLayers);
+    console.log("KECAMATAN FEATURES", kecamatanFeatures);
+
+    // If the clicked feature is a "Kecamatan", we will set the selectedKecamatan
+    const selectedFeature = featureList.find(
+      (item) => item.layerId === "0c7f8813-33c1-45bf-a39b-e04d993e05ac_fill" // Adjust based on your actual feature's name or condition
+    );
+    console.log("SELECTED FEATURES", selectedFeature);
+
+    if (selectedFeature) {
+      featureStore.setSelectedKecamatan(selectedFeature); // Set the selected Kecamatan in the store
+      featureStore.setMapInfo("analytic");
+    }
 
     popupItems.value = featureList as PopupItem[];
     if (popupRef.value) {

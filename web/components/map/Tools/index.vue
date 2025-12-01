@@ -49,36 +49,35 @@ const removeAllAnimation = () => {
       v-if="!showTable && showTools"
       class="z-10 absolute bottom-8 left-1/2 -translate-x-1/2 rounded-lg flex gap-2 bg-grey-900 ring-1 ring-grey-700 p-2"
     >
-      <!-- 
       <MapToolsDropdown
-      :triggerLabel="'Analytic Tools'"
-      :triggerIcon="IcChart"
-      :itemLabel="'Analytic Tools'"
-      :itemDescription="'Geospatial Analytic Tools to draw Insights from the Map.'"
-      :items="[
-      {
-        id: 'advanced_insight',
-        label: 'Advanced Insight',
-            icon: IcTools,
-          },
-          {
-            id: 'isochrone',
-            label: 'Isochrone',
-            icon: IcDrawFree,
-          },
+        :triggerLabel="'Analytic Tools'"
+        :triggerIcon="IcChart"
+        :itemLabel="'Analytic Tools'"
+        :itemDescription="'Geospatial Analytic Tools to draw Insights from the Map.'"
+        :items="[
+          // {
+          //   id: 'advanced_insight',
+          //   label: 'Advanced Insight',
+          //       icon: IcTools,
+          //     },
+          //     {
+          //       id: 'isochrone',
+          //       label: 'Isochrone',
+          //       icon: IcDrawFree,
+          //     },
           {
             id: 'buffer_area',
             label: 'Buffer Area',
             icon: IcDrawSquare,
           },
-          {
-            id: 'route_finder',
-            label: 'Route Finder',
-            icon: IcRoute,
-          },
-          ]"
+          // {
+          //   id: 'route_finder',
+          //   label: 'Route Finder',
+          //   icon: IcRoute,
+          // },
+        ]"
       ></MapToolsDropdown>
-      -->
+
       <MapToolsDropdown
         :triggerLabel="'Advanced Search'"
         :triggerIcon="IcSearch"

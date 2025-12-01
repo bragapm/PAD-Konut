@@ -28,6 +28,11 @@ export const useFeature = defineStore("feature", () => {
   function setRightSidebar(newValue: rightSidebarEnum) {
     rightSidebar.value = newValue;
   }
+
+  const selectedKecamatan = ref();
+  function setSelectedKecamatan(newValue: any) {
+    selectedKecamatan.value = newValue;
+  }
   return {
     feature,
     setFeature,
@@ -37,5 +42,7 @@ export const useFeature = defineStore("feature", () => {
     setRightSidebar,
     mapInfo,
     setMapInfo,
+    selectedKecamatan,
+    setSelectedKecamatan
   };
 });

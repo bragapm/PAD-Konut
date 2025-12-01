@@ -138,13 +138,22 @@ const handleBuffer = () => {
 
 const layerStore = useMapLayer();
 const activeLayers = computed(() => {
-  return layerStore.groupedActiveLayers
-    ?.map(({ layerLists }) => layerLists)
-    .flat()
-    .filter((el) => el.source === "vector_tiles")
-    .map(({ layer_name }: any) => layer_name as string);
+  return (
+    layerStore.groupedActiveLayers
+      ?.map((group) => group.layerLists)
+      .flat()
+      .filter((el) => el.source === "vector_tiles")
+      .map(({ layer_name, layer_alias }) => ({
+        layer_name,
+        layer_alias,
+      })) || []
+  );
 });
-const selectedLayer = ref<string>();
+
+const selectedLayer = ref<{ layer_name: string; layer_alias: string } | null>({
+  layer_alias: "",
+  layer_name: "",
+});
 
 const enabled = computed(() => !!selectedLayer.value);
 const {
@@ -153,7 +162,10 @@ const {
   isFetching: isHeaderFetching,
   isError: isHeaderError,
 } = useQuery({
-  queryKey: ["/panel/vector-tiles-attribute-table-header/", selectedLayer],
+  queryKey: [
+    "/panel/vector-tiles-attribute-table-header/",
+    selectedLayer.value?.layer_name,
+  ],
   queryFn: async ({ queryKey }) => {
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
@@ -205,7 +217,7 @@ const handleIntersect = async () => {
   const payload = {
     points: points.value.map(([_, lng, lat]) => [lng, lat]),
     radius: convertLength(+digit.value, unit.value as Units, "meters"),
-    layer: selectedLayer.value,
+    layer: selectedLayer.value!.layer_name,
     type: selectedType.value,
     column: selectedColumn.value,
   };
@@ -225,7 +237,7 @@ const handleIntersect = async () => {
     analysisStore.addResult({
       date: new Date().toLocaleString(),
       description: `${digit.value} ${unit.value} from ${points.value.length} points`,
-      layer: selectedLayer.value!,
+      layer: selectedLayer.value!.layer_name,
       result,
     });
     featureStore.setMapInfo("analytic");
@@ -277,11 +289,14 @@ const handleIntersect = async () => {
       <USelect
         v-model="selectedLayer"
         :items="activeLayers"
+        labelKey="layer_alias"
+        valueKey="layer_name"
         color="primary"
         size="xs"
         variant="subtle"
         class="h-6"
-      /><USelect
+      />
+      <USelect
         v-model="selectedType"
         :items="['simple', 'categorical']"
         color="primary"
