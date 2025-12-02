@@ -364,6 +364,9 @@ onMounted(async () => {
   await fetchAssetUtilization(selectedKecamatan.value.rowId);
   console.log("SELECTED", selected.value);
 });
+onUnmounted(async () => {
+  featureStore.setSelectedKecamatan("");
+});
 
 watch(builtAssetData, () => {
   prepareBuiltChartData();
@@ -397,221 +400,225 @@ watch(assetUtilizationData, () => {
 
     <!-- Content -->
     <div class="flex-1 overflow-y-auto px-3 pb-4 pt-3 space-y-3 text-xs">
-      <!-- Top green card -->
       <div
-        class="rounded-xl bg-gradient-to-br from-gray-900/70 to-[#41B922] p-[1px]"
+        v-if="selectedKecamatan"
+        class="flex-1 overflow-y-auto px-3 pb-4 pt-3 space-y-3 text-xs"
       >
+        <!-- Top green card -->
         <div
-          class="rounded-[0.8rem] bg-gradient-to-br from-gray-900/70 to-[#41B922] px-3 py-3 space-y-3"
+          class="rounded-xl bg-gradient-to-br from-gray-900/70 to-[#41B922] p-[1px]"
         >
-          <!-- Time & date -->
-          <div class="flex items-center justify-between gap-2">
-            <div
-              class="inline-flex items-center gap-1 rounded-full border border-lime-400/60 px-2 py-0.5 text-[0.65rem] font-medium"
-            >
-              <span
-                class="inline-block h-1.5 w-1.5 rounded-full bg-lime-400"
-              ></span>
-              <span>{{ selected?.timeLabel ?? "12:39 WIB" }}</span>
-            </div>
-            <span class="text-[0.65rem] tracking-wider text-lime-100/80">
-              {{ selected?.date ?? "10/11/2025" }}
-            </span>
-          </div>
-
-          <!-- Location & area -->
-          <div class="space-y-1">
-            <p class="text-[0.75rem] text-lime-100/80">
-              {{ selected?.name ?? "Kecamatan Wawolesea" }}
-            </p>
-            <div
-              class="flex items-center gap-3 text-[0.65rem] text-lime-100/70"
-            >
-              <span class="font-medium">Luas</span>
-              <span class="opacity-60">:</span>
-              <span class="font-semibold">
-                {{ parseFloat(selected?.areaKm2.toFixed(2)) }}
-                KM2
+          <div
+            class="rounded-[0.8rem] bg-gradient-to-br from-gray-900/70 to-[#41B922] px-3 py-3 space-y-3"
+          >
+            <!-- Time & date -->
+            <div class="flex items-center justify-between gap-2">
+              <div
+                class="inline-flex items-center gap-1 rounded-full border border-lime-400/60 px-2 py-0.5 text-[0.65rem] font-medium"
+              >
+                <span
+                  class="inline-block h-1.5 w-1.5 rounded-full bg-lime-400"
+                ></span>
+                <span>{{ selected?.timeLabel ?? "12:39 WIB" }}</span>
+              </div>
+              <span class="text-[0.65rem] tracking-wider text-lime-100/80">
+                {{ selected?.date ?? "10/11/2025" }}
               </span>
             </div>
-          </div>
-        </div>
-      </div>
 
-      <!-- Stats: total / built / natural -->
-      <div class="space-y-2">
-        <!-- Total -->
-        <div
-          class="flex items-center justify-between rounded-xl bg-neutral-850/80 px-3 py-3 border border-neutral-800"
-        >
-          <div>
-            <div class="text-2xl font-semibold leading-none">
-              {{ selected?.totalAssets ?? 32 }}
-            </div>
-            <div class="mt-1 text-[0.7rem] text-neutral-400">Jumlah Aset</div>
-            <div class="mt-0.5 text-[0.6rem] text-neutral-500">
-              Last update {{ selected?.updatedAt ?? "10:15" }}
-            </div>
-          </div>
-          <div
-            class="flex h-10 w-10 items-center justify-center rounded-lg border border-lime-400/60 bg-lime-500/10"
-          >
-            <!-- simple 'building' icon placeholder -->
-            <div class="grid grid-cols-2 gap-0.5 text-[0.25rem]">
-              <span
-                v-for="n in 4"
-                :key="n"
-                class="h-3 w-2 rounded-[2px] border border-lime-400/50"
-              ></span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Built / natural -->
-        <div class="grid grid-cols-2 gap-2">
-          <div
-            class="rounded-xl bg-neutral-850/80 px-3 py-3 border border-neutral-800"
-          >
-            <div class="flex items-start justify-between gap-1">
-              <div>
-                <div class="text-xl font-semibold leading-none">
-                  {{ selected?.builtAssets ?? 29 }}
-                </div>
-                <div class="mt-1 text-[0.7rem] text-neutral-400">
-                  Aset Buatan
-                </div>
-              </div>
+            <!-- Location & area -->
+            <div class="space-y-1">
+              <p class="text-[0.75rem] text-lime-100/80">
+                {{ selected?.name ?? "Kecamatan Wawolesea" }}
+              </p>
               <div
-                class="h-7 w-7 rounded-lg border border-lime-400/50 bg-lime-500/10"
-              ></div>
-            </div>
-            <div class="mt-1 text-[0.6rem] text-neutral-500">
-              Last update {{ selected?.updatedAt ?? "10:15" }}
-            </div>
-          </div>
-
-          <div
-            class="rounded-xl bg-neutral-850/80 px-3 py-3 border border-neutral-800"
-          >
-            <div class="flex items-start justify-between gap-1">
-              <div>
-                <div class="text-xl font-semibold leading-none">
-                  {{ selected?.naturalAssets ?? 3 }}
-                </div>
-                <div class="mt-1 text-[0.7rem] text-neutral-400">
-                  Aset Alami
-                </div>
+                class="flex items-center gap-3 text-[0.65rem] text-lime-100/70"
+              >
+                <span class="font-medium">Luas</span>
+                <span class="opacity-60">:</span>
+                <span class="font-semibold">
+                  {{ parseFloat(selected?.areaKm2.toFixed(2)) }}
+                  KM2
+                </span>
               </div>
-              <div
-                class="h-7 w-7 rounded-lg border border-lime-400/50 bg-lime-500/10"
-              ></div>
-            </div>
-            <div class="mt-1 text-[0.6rem] text-neutral-500">
-              Last update {{ selected?.updatedAt ?? "10:15" }}
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Status Pemanfaatan -->
-      <div
-        class="rounded-xl bg-neutral-850/80 px-3 py-3 border border-neutral-800"
-      >
-        <div class="mb-2 text-[0.75rem] font-medium">Status Pemanfaatan</div>
-        <div class="flex items-center gap-3">
-          <!-- Donut chart -->
-          <div class="relative h-20 w-20 shrink-0">
-            <div
-              class="absolute inset-0 rounded-full"
-              :style="{
-                background: `conic-gradient(#84cc16 ${
-                  selected?.utilizedPct ?? 90
-                }%, #1f2937 0)`, // Dynamically set the chart colors and data
-              }"
-            ></div>
-            <div
-              class="absolute inset-2 rounded-full bg-neutral-900 flex flex-col items-center justify-center"
-            >
-              <span class="text-[0.6rem] text-neutral-400">Jumlah Aset</span>
-              <span class="text-base font-semibold">
+        <!-- Stats: total / built / natural -->
+        <div class="space-y-2">
+          <!-- Total -->
+          <div
+            class="flex items-center justify-between rounded-xl bg-neutral-850/80 px-3 py-3 border border-neutral-800"
+          >
+            <div>
+              <div class="text-2xl font-semibold leading-none">
                 {{ selected?.totalAssets ?? 32 }}
-              </span>
+              </div>
+              <div class="mt-1 text-[0.7rem] text-neutral-400">Jumlah Aset</div>
+              <div class="mt-0.5 text-[0.6rem] text-neutral-500">
+                Last update {{ selected?.updatedAt ?? "10:15" }}
+              </div>
+            </div>
+            <div
+              class="flex h-10 w-10 items-center justify-center rounded-lg border border-lime-400/60 bg-lime-500/10"
+            >
+              <!-- simple 'building' icon placeholder -->
+              <div class="grid grid-cols-2 gap-0.5 text-[0.25rem]">
+                <span
+                  v-for="n in 4"
+                  :key="n"
+                  class="h-3 w-2 rounded-[2px] border border-lime-400/50"
+                ></span>
+              </div>
             </div>
           </div>
 
-          <!-- Chart Component -->
-          <div class="flex-1 space-y-2 text-[0.7rem]">
-            <DoughnutChart
-              :data="doughnutChartData"
-              :options="doughnutChartOptions"
+          <!-- Built / natural -->
+          <div class="grid grid-cols-2 gap-2">
+            <div
+              class="rounded-xl bg-neutral-850/80 px-3 py-3 border border-neutral-800"
+            >
+              <div class="flex items-start justify-between gap-1">
+                <div>
+                  <div class="text-xl font-semibold leading-none">
+                    {{ selected?.builtAssets ?? 29 }}
+                  </div>
+                  <div class="mt-1 text-[0.7rem] text-neutral-400">
+                    Aset Buatan
+                  </div>
+                </div>
+                <div
+                  class="h-7 w-7 rounded-lg border border-lime-400/50 bg-lime-500/10"
+                ></div>
+              </div>
+              <div class="mt-1 text-[0.6rem] text-neutral-500">
+                Last update {{ selected?.updatedAt ?? "10:15" }}
+              </div>
+            </div>
+
+            <div
+              class="rounded-xl bg-neutral-850/80 px-3 py-3 border border-neutral-800"
+            >
+              <div class="flex items-start justify-between gap-1">
+                <div>
+                  <div class="text-xl font-semibold leading-none">
+                    {{ selected?.naturalAssets ?? 3 }}
+                  </div>
+                  <div class="mt-1 text-[0.7rem] text-neutral-400">
+                    Aset Alami
+                  </div>
+                </div>
+                <div
+                  class="h-7 w-7 rounded-lg border border-lime-400/50 bg-lime-500/10"
+                ></div>
+              </div>
+              <div class="mt-1 text-[0.6rem] text-neutral-500">
+                Last update {{ selected?.updatedAt ?? "10:15" }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Status Pemanfaatan -->
+        <div
+          class="rounded-xl bg-neutral-850/80 px-3 py-3 border border-neutral-800"
+        >
+          <div class="mb-2 text-[0.75rem] font-medium">Status Pemanfaatan</div>
+          <div class="flex items-center gap-3">
+            <!-- Donut chart -->
+            <div class="relative h-20 w-20 shrink-0">
+              <div
+                class="absolute inset-0 rounded-full"
+                :style="{
+                  background: `conic-gradient(#84cc16 ${
+                    selected?.utilizedPct ?? 90
+                  }%, #1f2937 0)`, // Dynamically set the chart colors and data
+                }"
+              ></div>
+              <div
+                class="absolute inset-2 rounded-full bg-neutral-900 flex flex-col items-center justify-center"
+              >
+                <span class="text-[0.6rem] text-neutral-400">Jumlah Aset</span>
+                <span class="text-base font-semibold">
+                  {{ selected?.totalAssets ?? 32 }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Chart Component -->
+            <div class="flex-1 space-y-2 text-[0.7rem]">
+              <DoughnutChart
+                :data="doughnutChartData"
+                :options="doughnutChartOptions"
+              />
+            </div>
+
+            <div class="flex-1 space-y-2 text-[0.7rem]">
+              <div class="flex flex-col items-center justify-between gap-2">
+                <span class="flex items-center gap-1">
+                  <span class="inline-block h-2 w-2 rounded-full bg-lime-400" />
+                  Termanfaatkan
+                </span>
+                <span class="font-semibold">
+                  {{ assetUtilizationData?.utilizedPct }} %
+                </span>
+              </div>
+              <div class="flex flex-col items-center justify-between gap-2">
+                <span class="flex items-center gap-1">
+                  <span
+                    class="inline-block h-2 w-2 rounded-full bg-neutral-600"
+                  />
+                  Tidak Termanfaatkan
+                </span>
+                <span class="font-semibold">
+                  {{ assetUtilizationData?.notUtilizedPct }} %
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Distribusi Aset Toponomi - Buatan -->
+        <div
+          class="rounded-xl bg-neutral-850/80 px-3 py-3 border border-neutral-800"
+        >
+          <div class="mb-2 text-[0.75rem] font-medium">
+            Distribusi Aset Toponomi - Buatan
+          </div>
+
+          <!-- Bar chart -->
+          <div class="mt-4 h-40">
+            <Bar
+              :data="builtChartData || defaultChartData"
+              :options="chartOptions"
             />
           </div>
-
-          <div class="flex-1 space-y-2 text-[0.7rem]">
-            <div class="flex flex-col items-center justify-between gap-2">
-              <span class="flex items-center gap-1">
-                <span class="inline-block h-2 w-2 rounded-full bg-lime-400" />
-                Termanfaatkan
-              </span>
-              <span class="font-semibold">
-                {{ assetUtilizationData?.utilizedPct }} %
-              </span>
-            </div>
-            <div class="flex flex-col items-center justify-between gap-2">
-              <span class="flex items-center gap-1">
-                <span
-                  class="inline-block h-2 w-2 rounded-full bg-neutral-600"
-                />
-                Tidak Termanfaatkan
-              </span>
-              <span class="font-semibold">
-                {{ assetUtilizationData?.notUtilizedPct }} %
-              </span>
-            </div>
+        </div>
+        <!-- Distribusi Aset Toponomi - Alami -->
+        <div
+          class="rounded-xl bg-neutral-850/80 px-3 py-3 border border-neutral-800"
+        >
+          <div class="mb-2 text-[0.75rem] font-medium">
+            Distribusi Aset Toponomi - Alami
           </div>
-        </div>
-      </div>
 
-      <!-- Distribusi Aset Toponomi - Buatan -->
-      <div
-        class="rounded-xl bg-neutral-850/80 px-3 py-3 border border-neutral-800"
-      >
-        <div class="mb-2 text-[0.75rem] font-medium">
-          Distribusi Aset Toponomi - Buatan
-        </div>
-
-        <!-- Bar chart -->
-        <div class="mt-4 h-40">
-          <Bar
-            :data="builtChartData || defaultChartData"
-            :options="chartOptions"
-          />
-        </div>
-      </div>
-      <!-- Distribusi Aset Toponomi - Alami -->
-      <div
-        class="rounded-xl bg-neutral-850/80 px-3 py-3 border border-neutral-800"
-      >
-        <div class="mb-2 text-[0.75rem] font-medium">
-          Distribusi Aset Toponomi - Alami
-        </div>
-
-        <!-- Bar chart -->
-        <div class="mt-4 h-40">
-          <Bar
-            :data="naturalChartData || defaultChartData"
-            :options="chartOptions"
-          />
+          <!-- Bar chart -->
+          <div class="mt-4 h-40">
+            <Bar
+              :data="naturalChartData || defaultChartData"
+              :options="chartOptions"
+            />
+          </div>
         </div>
       </div>
 
       <!-- Optional: detail list using existing MapAnalysisItem -->
       <div
         v-if="analysisStore.results.length > 1"
-        class="rounded-xl bg-neutral-850/80 px-3 py-3 border border-neutral-800"
+        class="rounded-xl bg-neutral-850/80 border border-neutral-800 h-full flex flex-col"
       >
-        <div class="mb-2 text-[0.75rem] font-medium">Daftar Aset</div>
-        <div class="space-y-2 max-h-40 overflow-y-auto pr-1">
+        <div class="space-y-2 overflow-y-auto p-2">
           <MapAnalysisItem
             v-for="(result, idx) in analysisStore.results"
             :key="idx"

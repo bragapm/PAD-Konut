@@ -23,6 +23,7 @@ export default (router, { database, logger, services }) => {
         fields: ["layer_name"],
         limit: 1,
       });
+      console.log('LAYERS', layers)
     } catch (error) {
       logger.error(error);
       return next(

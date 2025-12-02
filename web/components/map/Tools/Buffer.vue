@@ -150,22 +150,22 @@ const activeLayers = computed(() => {
   );
 });
 
-const selectedLayer = ref<{ layer_name: string; layer_alias: string } | null>({
-  layer_alias: "",
-  layer_name: "",
-});
+const selectedLayerName = ref<string | null>(null);
 
-const enabled = computed(() => !!selectedLayer.value);
+const selectedLayerAlias = computed(
+  () =>
+    activeLayers.value.find((l) => l.layer_name === selectedLayerName.value)
+      ?.layer_alias ?? ""
+);
+
+const enabled = computed(() => !!selectedLayerName.value);
 const {
   data: headerData,
   error: headerError,
   isFetching: isHeaderFetching,
   isError: isHeaderError,
 } = useQuery({
-  queryKey: [
-    "/panel/vector-tiles-attribute-table-header/",
-    selectedLayer.value?.layer_name,
-  ],
+  queryKey: ["/panel/vector-tiles-attribute-table-header/", selectedLayerName],
   queryFn: async ({ queryKey }) => {
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
@@ -175,8 +175,10 @@ const {
       headers["Authorization"] = `Bearer ${authStore.accessToken}`;
     }
 
+    const cleanLayerName = selectedLayerName.value?.split("?")[0];
+
     const res = await $fetch<{ data: HeaderData[] }>(
-      queryKey[0] + queryKey[1]!,
+      queryKey[0] + cleanLayerName,
       { headers }
     );
 
@@ -191,6 +193,7 @@ const columns = computed<
   }[]
 >(() => {
   if (headerData.value) {
+    console.log("HEADER DATA", headerData.value);
     return headerData.value
       .filter((el) => el.type !== "geometry")
       .map((el: HeaderData) => ({
@@ -205,7 +208,8 @@ const selectedColumn = ref<{
   name: string;
 }>();
 
-watch(selectedLayer, () => {
+watch(selectedLayerName, (newLayer) => {
+  console.log("NEW LAYER", newLayer);
   selectedColumn.value = undefined;
 });
 
@@ -214,13 +218,16 @@ const featureStore = useFeature();
 const analysisStore = useAnalysisResult();
 const isAnalyze = ref(false);
 const handleIntersect = async () => {
+  const cleanLayerName = selectedLayerName.value?.split("?")[0];
+
   const payload = {
     points: points.value.map(([_, lng, lat]) => [lng, lat]),
     radius: convertLength(+digit.value, unit.value as Units, "meters"),
-    layer: selectedLayer.value!.layer_name,
+    layer: cleanLayerName,
     type: selectedType.value,
     column: selectedColumn.value,
   };
+
   try {
     isAnalyze.value = true;
     const result = await $fetch<{ category: string; count: string }[]>(
@@ -237,7 +244,8 @@ const handleIntersect = async () => {
     analysisStore.addResult({
       date: new Date().toLocaleString(),
       description: `${digit.value} ${unit.value} from ${points.value.length} points`,
-      layer: selectedLayer.value!.layer_name,
+      layer: selectedLayerName.value,
+
       result,
     });
     featureStore.setMapInfo("analytic");
@@ -287,7 +295,7 @@ const handleIntersect = async () => {
     />
     <div class="grid grid-cols-3 gap-1">
       <USelect
-        v-model="selectedLayer"
+        v-model="selectedLayerName"
         :items="activeLayers"
         labelKey="layer_alias"
         valueKey="layer_name"
@@ -296,6 +304,7 @@ const handleIntersect = async () => {
         variant="subtle"
         class="h-6"
       />
+
       <USelect
         v-model="selectedType"
         :items="['simple', 'categorical']"
