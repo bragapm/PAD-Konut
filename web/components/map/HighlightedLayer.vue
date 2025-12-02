@@ -55,6 +55,8 @@ function extractStyleObjects(layerStyle: Record<string, any>) {
     }
   });
 
+  console.log("LAYOUT AT HIGHLIHGT", layout);
+
   return { paint, layout };
 }
 

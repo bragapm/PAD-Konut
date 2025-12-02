@@ -1,6 +1,7 @@
 import type { GeoJSONSource, Map } from "maplibre-gl";
 import type { MapData, GeneralSettings } from "./types";
 import type { Raw } from "vue";
+import { useAuth } from "#imports";
 
 export const getBrandColor = (colorStep: string): string => {
   if (typeof window === "undefined") {
@@ -157,13 +158,29 @@ export const addHighlightLayer = (map: Map) => {
       features: [],
     },
   });
-
+  // --- GLOW BACKGROUND (circle halo) ---
   map.addLayer({
+    id: "highlight-point-glow",
+    type: "circle",
+    source: "highlight",
+    paint: {
+      "circle-radius": 30,          // bigger glow
+      "circle-color": getBrandColor("400"),
+      "circle-opacity": 0.65,
+      "circle-blur": 0.6,           // glow softness
+    },
+    filter: ["==", "$type", "Point"],
+  });
+
+  // --- MAIN SYMBOL ICON ---
+  map.addLayer({
+    id: "highlight-point-pulsing",
     type: "symbol",
     source: "highlight",
-    id: "highlight-point-pulsing",
     layout: {
       "icon-image": "pulsing-dot",
+      "icon-size": 2.2,             // increase size (1 = default)
+      "icon-allow-overlap": true,
     },
     filter: ["==", "$type", "Point"],
   });
@@ -205,7 +222,7 @@ export const addHighlightLayer = (map: Map) => {
         duration: 900,
         delay: 0,
       },
-    } as any,
+    },
     filter: ["==", "$type", "Polygon"],
   });
 
@@ -222,6 +239,7 @@ export const addHighlightLayer = (map: Map) => {
     filter: ["==", "$type", "Polygon"],
   });
 };
+
 
 export const showHighlightLayer = (
   map: Raw<Map>,
