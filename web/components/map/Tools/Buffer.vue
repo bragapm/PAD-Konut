@@ -334,6 +334,7 @@ const handleIntersect = async () => {
     >
     <UButton
       @click="handleIntersect"
+      :disabled="!selectedLayerName"
       color="brand"
       class="w-full justify-center text-sm rounded-sm"
       :loading="isAnalyze"

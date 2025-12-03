@@ -150,7 +150,7 @@ export const pauseAllAnimation = () => {
   pausePolygonAnimation();
 };
 
-export const addHighlightLayer = (map: Map) => {
+export const addHighlightLayer = (map: Map, layout?:any) => {
   map.addSource("highlight", {
     type: "geojson",
     data: {
@@ -158,33 +158,40 @@ export const addHighlightLayer = (map: Map) => {
       features: [],
     },
   });
-  // --- GLOW BACKGROUND (circle halo) ---
+
+    const mergedSymbolLayout = {
+    "visibility": 'visible',                  // keep everything from the user
+    "icon-image": layout["icon-image"] ?? "pulsing-dot", // override icon image
+    "icon-size": (layout["icon-size"] ?? 1) * 2.5,        // enlarge icon
+    "icon-allow-overlap": true,                           // ensure visible
+  };
+
+  console.log('MERGED SYMBOL', mergedSymbolLayout)
+
+
+  // === MAIN SYMBOL LAYER (with merged layout) ===
+  map.addLayer({
+    id: "highlight-point-pulsing",
+    type: "symbol",
+    source: "highlight",
+    layout: mergedSymbolLayout,
+    filter: ["==", "$type", "Point"],
+  });
+
+
+    // --- GLOW BACKGROUND (circle halo) ---
   map.addLayer({
     id: "highlight-point-glow",
     type: "circle",
     source: "highlight",
     paint: {
-      "circle-radius": 30,          // bigger glow
-      "circle-color": getBrandColor("400"),
+      "circle-radius": 80,          // bigger glow
+      "circle-color": '#ffffff',
       "circle-opacity": 0.65,
       "circle-blur": 0.6,           // glow softness
     },
     filter: ["==", "$type", "Point"],
-  });
-
-  // --- MAIN SYMBOL ICON ---
-  map.addLayer({
-    id: "highlight-point-pulsing",
-    type: "symbol",
-    source: "highlight",
-    layout: {
-      "icon-image": "pulsing-dot",
-      "icon-size": 2.2,             // increase size (1 = default)
-      "icon-allow-overlap": true,
-    },
-    filter: ["==", "$type", "Point"],
-  });
-
+  }, 'highlight-point-pulsing');
   map.addLayer({
     type: "line",
     source: "highlight",
@@ -240,11 +247,36 @@ export const addHighlightLayer = (map: Map) => {
   });
 };
 
+export const removeHighlightLayer = (map: Map) => {
+  const layers = [
+    "highlight-point-pulsing",
+    "highlight-point-glow",
+    "highlight-line-background",
+    "highlight-line-dashed",
+    "highlight-fill-background",
+    "highlight-fill-outline",
+  ];
+
+  // Remove layers if they exist
+  layers.forEach((layerId) => {
+    if (map.getLayer(layerId)) {
+      map.removeLayer(layerId);
+    }
+  });
+
+  // Remove source
+  if (map.getSource("highlight")) {
+    map.removeSource("highlight");
+  }
+};
+
+
 
 export const showHighlightLayer = (
   map: Raw<Map>,
   featureList: { geom: GeoJSON.Geometry }[],
   layerName: string,
+  layout?: any,
   isAll?: boolean
 ) => {
   const newData: GeoJSON.FeatureCollection = {
@@ -258,7 +290,7 @@ export const showHighlightLayer = (
       })),
   };
   if (!map.getSource("highlight")) {
-    addHighlightLayer(map);
+    addHighlightLayer(map, layout);
   }
 
   (map.getSource("highlight") as GeoJSONSource).setData(newData);

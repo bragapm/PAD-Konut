@@ -11,6 +11,7 @@ import IcArrowReg from "~/assets/icons/ic-arrow-reg.svg";
 import IcCross from "~/assets/icons/ic-cross.svg";
 import KeenSlider, { type KeenSliderInstance } from "keen-slider";
 import { showHighlightLayer } from "~/utils/index";
+import { removeHighlightLayer } from "../../utils";
 
 const mapRefStore = useMapRef();
 const featureStore = useFeature();
@@ -108,6 +109,7 @@ watchEffect((onInvalidate) => {
 
           data: { ...feature.properties, geom: feature.geometry },
           clickPopupColumns: (foundLayer as ExternalVector).click_popup_columns,
+          layout: feature.layer.layout,
         };
       } else {
         return {
@@ -121,6 +123,7 @@ watchEffect((onInvalidate) => {
           featureDetailColumns: (foundLayer as VectorTiles)
             .feature_detail_columns,
           imageColumns: (foundLayer as VectorTiles).image_columns ?? [],
+          layout: feature.layer.layout,
         };
       }
     });
@@ -179,6 +182,7 @@ watchEffect((onInvalidate) => {
 onUnmounted(() => {
   slider?.destroy();
   popupRef.value?.remove();
+  removeHighlightLayer(map.value);
 });
 
 watchEffect(async () => {
@@ -217,7 +221,8 @@ watchEffect(async () => {
     showHighlightLayer(
       map.value!,
       popupDataLists as any[],
-      popupItems.value[0].layerId
+      popupItems.value[0].layerId,
+      popupItems.value[0].layout
     );
   }
 });

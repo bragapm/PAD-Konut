@@ -1,6 +1,9 @@
 <script lang="ts" setup>
 import { ref, computed, onMounted } from "vue";
 import IcArrowLeft from "~/assets/icons/ic-arrow-left.svg";
+import IcJumlahAset from "~/assets/icons/ic-jumlah-aset.svg";
+import IcAsetBuatan from "~/assets/icons/ic-aset-buatan.svg";
+import IcAsetAlami from "~/assets/icons/ic-aset-alami.svg";
 import { Bar } from "vue-chartjs";
 import {
   Chart as ChartJS,
@@ -87,6 +90,9 @@ ChartJS.register(
 const builtAssetData = ref<any[]>([]);
 const naturalAssetData = ref<any[]>([]);
 const assetUtilizationData = ref<any>({});
+
+const timeNow = ref("");
+const dateNow = ref("");
 
 // Define chart data and options
 const builtChartData = ref<any>({
@@ -358,14 +364,44 @@ const fetchKecamatanStats = async (id: string) => {
   }
 };
 
+const updateTime = () => {
+  const now = new Date();
+  const hh = now.getHours().toString().padStart(2, "0");
+  const mm = now.getMinutes().toString().padStart(2, "0");
+
+  timeNow.value = `${hh}:${mm} WIB`;
+};
+
+const updateDate = () => {
+  const now = new Date();
+
+  const dd = now.getDate().toString().padStart(2, "0");
+  const mm = (now.getMonth() + 1).toString().padStart(2, "0"); // bulan mulai dari 0
+  const yyyy = now.getFullYear();
+
+  dateNow.value = `${dd}/${mm}/${yyyy}`;
+};
+
 onMounted(async () => {
-  await fetchKecamatanStats(selectedKecamatan.value.rowId);
-  await fetchAssetDistribution(selectedKecamatan.value.rowId);
-  await fetchAssetUtilization(selectedKecamatan.value.rowId);
-  console.log("SELECTED", selected.value);
+  if (selectedKecamatan.value.rowId) {
+    updateTime();
+    updateDate();
+    await fetchKecamatanStats(selectedKecamatan.value.rowId);
+    await fetchAssetDistribution(selectedKecamatan.value.rowId);
+    await fetchAssetUtilization(selectedKecamatan.value.rowId);
+    console.log("SELECTED", selected.value);
+  }
 });
 onUnmounted(async () => {
   featureStore.setSelectedKecamatan("");
+});
+
+watch(selectedKecamatan, async (newKecamatan) => {
+  if (newKecamatan) {
+    await fetchKecamatanStats(newKecamatan.rowId);
+    await fetchAssetDistribution(newKecamatan.rowId);
+    await fetchAssetUtilization(newKecamatan.rowId);
+  }
 });
 
 watch(builtAssetData, () => {
@@ -400,16 +436,30 @@ watch(assetUtilizationData, () => {
 
     <!-- Content -->
     <div class="flex-1 overflow-y-auto px-3 pb-4 pt-3 space-y-3 text-xs">
+      <!-- buffer analysisi-->
+      <div
+        v-if="analysisStore.results.length > 0 && !selectedKecamatan"
+        class="rounded-xl bg-neutral-850/80 border border-neutral-800 h-full flex flex-col"
+      >
+        <div class="space-y-2 overflow-y-auto p-2">
+          <MapAnalysisItem
+            v-for="(result, idx) in analysisStore.results"
+            :key="idx"
+            :result="result"
+          />
+        </div>
+      </div>
+      <!-- kecamatan analysis -->
       <div
         v-if="selectedKecamatan"
         class="flex-1 overflow-y-auto px-3 pb-4 pt-3 space-y-3 text-xs"
       >
         <!-- Top green card -->
         <div
-          class="rounded-xl bg-gradient-to-br from-gray-900/70 to-[#41B922] p-[1px]"
+          class="rounded-xl bg-gradient-to-br from-gray-900/70 to-brand-800 p-[1px]"
         >
           <div
-            class="rounded-[0.8rem] bg-gradient-to-br from-gray-900/70 to-[#41B922] px-3 py-3 space-y-3"
+            class="rounded-[0.8rem] bg-gradient-to-br from-gray-900/70 to-brand-800 px-3 py-3 space-y-3"
           >
             <!-- Time & date -->
             <div class="flex items-center justify-between gap-2">
@@ -419,10 +469,10 @@ watch(assetUtilizationData, () => {
                 <span
                   class="inline-block h-1.5 w-1.5 rounded-full bg-lime-400"
                 ></span>
-                <span>{{ selected?.timeLabel ?? "12:39 WIB" }}</span>
+                <span>{{ timeNow }}</span>
               </div>
               <span class="text-[0.65rem] tracking-wider text-lime-100/80">
-                {{ selected?.date ?? "10/11/2025" }}
+                {{ dateNow }}
               </span>
             </div>
 
@@ -449,7 +499,7 @@ watch(assetUtilizationData, () => {
         <div class="space-y-2">
           <!-- Total -->
           <div
-            class="flex items-center justify-between rounded-xl bg-neutral-850/80 px-3 py-3 border border-neutral-800"
+            class="flex items-center justify-between rounded-xl bg-neutral-850/80 px-3 py-3 border border-neutral-800 relative overflow-hidden"
           >
             <div>
               <div class="text-2xl font-semibold leading-none">
@@ -460,24 +510,17 @@ watch(assetUtilizationData, () => {
                 Last update {{ selected?.updatedAt ?? "10:15" }}
               </div>
             </div>
-            <div
-              class="flex h-10 w-10 items-center justify-center rounded-lg border border-lime-400/60 bg-lime-500/10"
-            >
-              <!-- simple 'building' icon placeholder -->
-              <div class="grid grid-cols-2 gap-0.5 text-[0.25rem]">
-                <span
-                  v-for="n in 4"
-                  :key="n"
-                  class="h-3 w-2 rounded-[2px] border border-lime-400/50"
-                ></span>
-              </div>
-            </div>
+
+            <IcJumlahAset
+              class="absolute -top-1 -right-1 size-10 text-brand-400"
+              :fontControlled="false"
+            />
           </div>
 
           <!-- Built / natural -->
           <div class="grid grid-cols-2 gap-2">
             <div
-              class="rounded-xl bg-neutral-850/80 px-3 py-3 border border-neutral-800"
+              class="rounded-xl bg-neutral-850/80 px-3 py-3 border border-neutral-800 relative overflow-hidden"
             >
               <div class="flex items-start justify-between gap-1">
                 <div>
@@ -488,9 +531,10 @@ watch(assetUtilizationData, () => {
                     Aset Buatan
                   </div>
                 </div>
-                <div
-                  class="h-7 w-7 rounded-lg border border-lime-400/50 bg-lime-500/10"
-                ></div>
+                <IcAsetBuatan
+                  class="absolute -top-1 -right-1 size-10 text-brand-400"
+                  :fontControlled="false"
+                />
               </div>
               <div class="mt-1 text-[0.6rem] text-neutral-500">
                 Last update {{ selected?.updatedAt ?? "10:15" }}
@@ -498,7 +542,7 @@ watch(assetUtilizationData, () => {
             </div>
 
             <div
-              class="rounded-xl bg-neutral-850/80 px-3 py-3 border border-neutral-800"
+              class="rounded-xl bg-neutral-850/80 px-3 py-3 border border-neutral-800 relative overflow-hidden"
             >
               <div class="flex items-start justify-between gap-1">
                 <div>
@@ -509,9 +553,10 @@ watch(assetUtilizationData, () => {
                     Aset Alami
                   </div>
                 </div>
-                <div
-                  class="h-7 w-7 rounded-lg border border-lime-400/50 bg-lime-500/10"
-                ></div>
+                <IcAsetAlami
+                  class="absolute -top-1 -right-1 size-10 text-brand-400"
+                  :fontControlled="false"
+                />
               </div>
               <div class="mt-1 text-[0.6rem] text-neutral-500">
                 Last update {{ selected?.updatedAt ?? "10:15" }}
@@ -610,20 +655,6 @@ watch(assetUtilizationData, () => {
               :options="chartOptions"
             />
           </div>
-        </div>
-      </div>
-
-      <!-- Optional: detail list using existing MapAnalysisItem -->
-      <div
-        v-if="analysisStore.results.length > 1"
-        class="rounded-xl bg-neutral-850/80 border border-neutral-800 h-full flex flex-col"
-      >
-        <div class="space-y-2 overflow-y-auto p-2">
-          <MapAnalysisItem
-            v-for="(result, idx) in analysisStore.results"
-            :key="idx"
-            :result="result"
-          />
         </div>
       </div>
     </div>
