@@ -12,7 +12,9 @@ import IcCross from "~/assets/icons/ic-cross.svg";
 import KeenSlider, { type KeenSliderInstance } from "keen-slider";
 import { showHighlightLayer } from "~/utils/index";
 import { removeHighlightLayer } from "../../utils";
+import { useAuth } from "#imports";
 
+const authStore = useAuth();
 const mapRefStore = useMapRef();
 const featureStore = useFeature();
 const { map } = storeToRefs(mapRefStore);
@@ -25,27 +27,6 @@ const sliderContainer = ref<HTMLElement | null>(null);
 let slider: KeenSliderInstance | null = null;
 let nextImage: (e: MouseEvent) => void;
 let prevImage: (e: MouseEvent) => void;
-
-onMounted(() => {
-  if (sliderContainer.value) {
-    slider = new KeenSlider(
-      sliderContainer.value!,
-      {
-        loop: true,
-      },
-      []
-    );
-    nextImage = (e: MouseEvent) => {
-      slider?.update();
-      slider?.next();
-    };
-
-    prevImage = (e: MouseEvent) => {
-      slider?.update();
-      slider?.prev();
-    };
-  }
-});
 
 // Popup Logic
 export type PopupItem = {
@@ -67,9 +48,47 @@ const features = ref<any[]>([]);
 const isFetching = ref(false);
 const featureIndex = ref(0);
 
+const clearPopupAndHighlight = () => {
+  popupRef.value?.remove();
+  popupRef.value = undefined;
+
+  popupItems.value = [];
+  features.value = [];
+  featureIndex.value = 0;
+
+  featureStore.setFeature(null as any);
+  featureStore.setSelectedKecamatan(null as any);
+  featureStore.setMapInfo("");
+
+  if (map.value) {
+    removeHighlightLayer(map.value);
+  }
+};
+
+const handleDocumentClick = (e: MouseEvent) => {
+  if (!popupRef.value || !contentRef.value) return;
+
+  const target = e.target as Node;
+
+  // 1️⃣ kalau klik di dalam popup → abaikan
+  if (contentRef.value.contains(target)) return;
+
+  // 2️⃣ kalau klik di dalam map canvas → biarin clickEvent yang ngurus
+  const mapCanvas = map.value?.getCanvas();
+  if (mapCanvas && (target === mapCanvas || mapCanvas.contains(target))) {
+    return;
+  }
+
+  // 3️⃣ klik di luar popup & luar map → baru full clear
+  clearPopupAndHighlight();
+};
+
 watchEffect((onInvalidate) => {
   const clickEvent = (e: MapMouseEvent & Object) => {
     // The 'point' to query for features
+    // clear first
+    clearPopupAndHighlight();
+
     const point = [e.point.x, e.point.y];
     const filterLayers = mapLayerStore.groupedActiveLayers
       ?.map(({ layerLists }) => layerLists)
@@ -83,6 +102,13 @@ watchEffect((onInvalidate) => {
     const features = map.value!.queryRenderedFeatures(point as PointLike, {
       layers: filterLayers?.map(({ layer_id }) => layer_id),
     });
+
+    if (!features.length) {
+      clearPopupAndHighlight();
+      return;
+    }
+
+    console.log("FEATURE", features);
 
     const kecamatanLayers = mapLayerStore.groupedActiveLayers
       ?.map(({ layerLists }) => layerLists)
@@ -179,10 +205,31 @@ watchEffect((onInvalidate) => {
   });
 });
 
+onMounted(() => {
+  if (sliderContainer.value) {
+    slider = new KeenSlider(sliderContainer.value!, { loop: true }, []);
+
+    nextImage = () => {
+      slider?.update();
+      slider?.next();
+    };
+
+    prevImage = () => {
+      slider?.update();
+      slider?.prev();
+    };
+  }
+
+  window.addEventListener("click", handleDocumentClick);
+});
+
 onUnmounted(() => {
+  window.removeEventListener("click", handleDocumentClick);
+
   slider?.destroy();
-  popupRef.value?.remove();
-  removeHighlightLayer(map.value);
+  slider = undefined;
+
+  clearPopupAndHighlight();
 });
 
 watchEffect(async () => {
@@ -218,11 +265,12 @@ watchEffect(async () => {
     features.value = popupDataLists;
     featureIndex.value = 0;
     slider?.update();
+    console.log("LAYOUT", popupItems.value[0]?.layout);
     showHighlightLayer(
       map.value!,
       popupDataLists as any[],
-      popupItems.value[0].layerId,
-      popupItems.value[0].layout
+      popupItems.value[0]?.layerId,
+      popupItems.value[0]?.layout
     );
   }
 });
@@ -319,7 +367,7 @@ const removePopup = () => {
                     const value = features[featureIndex][k];
                     if (!value)
                       return [
-                        '/panel/assets/40060caa-4a46-4b2d-a06a-bb46b8bbe0e3',
+                        '/panel/assets/95fbcea0-1d5f-4aa9-8cff-190936994208',
                       ];
                     return value.includes(',')
                       ? value.split(',').map((el:string) => '/panel/assets/' + el)
@@ -405,7 +453,7 @@ const removePopup = () => {
           </template>
         </article>
 
-        <footer class="w-full flex items-center pt-2 space-x-2">
+        <footer class="w-full flex items-center justify-between pt-2 space-x-2">
           <button
             :disabled="popupItems?.length < 2 || featureIndex === 0"
             @click="prevFeature"
@@ -415,6 +463,13 @@ const removePopup = () => {
           </button>
 
           <button
+            v-if="
+              popupItems[featureIndex]?.layerId !==
+                '30695faa-edac-4f1c-a130-a0d69399edd8_fill' ||
+              (popupItems[featureIndex]?.layerId ===
+                '30695faa-edac-4f1c-a130-a0d69399edd8_fill' &&
+                authStore.isSignedIn)
+            "
             @click="
               () => {
                 featureStore.setRightSidebar('feature');

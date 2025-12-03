@@ -404,14 +404,20 @@ watch(selectedKecamatan, async (newKecamatan) => {
   }
 });
 
-watch(builtAssetData, () => {
-  prepareBuiltChartData();
+watch(builtAssetData, (newValue) => {
+  if (newValue) {
+    prepareBuiltChartData();
+  }
 });
-watch(naturalAssetData, () => {
-  prepareNaturalChartData();
+watch(naturalAssetData, (newValue) => {
+  if (newValue) {
+    prepareNaturalChartData();
+  }
 });
-watch(assetUtilizationData, () => {
-  prepareUtilizationChartData();
+watch(assetUtilizationData, (newValue) => {
+  if (newValue) {
+    prepareUtilizationChartData();
+  }
 });
 </script>
 

@@ -87,14 +87,18 @@ function startPolylineAnimation(map: Map) {
   function animateDashArray(timestamp: DOMHighResTimeStamp) {
     const newStep = Math.floor((timestamp / 60) % dashArraySequence.length);
 
+    if (map.getLayer('highlight-line-dashed')) {
+      
     if (newStep !== step) {
-      map.setPaintProperty(
-        "highlight-line-dashed",
-        "line-dasharray",
-        dashArraySequence[newStep]
-      );
-      step = newStep;
+        map.setPaintProperty(
+          "highlight-line-dashed",
+          "line-dasharray",
+          dashArraySequence[newStep]
+        );
+        step = newStep;
+      }
     }
+
 
     // Continue requesting the next frame
     frameId = requestAnimationFrame(animateDashArray);
@@ -114,16 +118,19 @@ const startPolygonAnimation = (map: Map) => {
   if (opacityInterval !== null) return;
 
   opacityInterval = setInterval(() => {
-    const currentOpacity = map.getPaintProperty(
-      "highlight-fill-background",
-      "fill-opacity"
-    );
-    const newOpacity = currentOpacity === 0.6 ? 0 : 0.6; // Toggle between 0 and 0.6
-    map.setPaintProperty(
-      "highlight-fill-background",
-      "fill-opacity",
-      newOpacity
-    );
+    if (map.getLayer('highlight-fill-background')) {
+
+      const currentOpacity = map.getPaintProperty(
+        "highlight-fill-background",
+        "fill-opacity"
+      );
+      const newOpacity = currentOpacity === 0.6 ? 0 : 0.6; // Toggle between 0 and 0.6
+      map.setPaintProperty(
+        "highlight-fill-background",
+        "fill-opacity",
+        newOpacity
+      );
+    }
   }, 900);
 };
 
