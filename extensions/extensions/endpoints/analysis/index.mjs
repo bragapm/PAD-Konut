@@ -13,20 +13,20 @@ export default (router, { database, logger }) => {
         const result = await database.raw(`
         WITH kecamatan_area AS (
             SELECT ST_Area(ST_Transform(geom, 3857)) / 1e6 AS area_km2  -- Convert area to square kilometers
-            FROM kecamatan_konawe
+            FROM kabupaten_konawe_utara
             WHERE id = ?
         ),
         asset_counts AS (
             SELECT 
             (SELECT COUNT(*) 
             FROM unsur_buatan 
-            WHERE ST_Within(geom, (SELECT geom FROM kecamatan_konawe WHERE id = ?))) AS built_assets,
+            WHERE ST_Within(geom, (SELECT geom FROM kabupaten_konawe_utara WHERE id = ?))) AS built_assets,
             (SELECT COUNT(*) 
             FROM unsur_alami 
-            WHERE ST_Within(geom, (SELECT geom FROM kecamatan_konawe WHERE id = ?))) AS natural_assets
+            WHERE ST_Within(geom, (SELECT geom FROM kabupaten_konawe_utara WHERE id = ?))) AS natural_assets
         ),
         general AS(
-            SELECT wadmkc FROM kecamatan_konawe
+            SELECT wadmkc FROM kabupaten_konawe_utara
             WHERE id = ?
         )
         SELECT 
@@ -65,7 +65,7 @@ export default (router, { database, logger }) => {
             unsur,
             COUNT(*) AS asset_count
             FROM unsur_buatan
-            WHERE ST_Within(geom, (SELECT geom FROM kecamatan_konawe WHERE id = ?))
+            WHERE ST_Within(geom, (SELECT geom FROM kabupaten_konawe_utara WHERE id = ?))
             GROUP BY unsur
         ),
         
@@ -75,7 +75,7 @@ export default (router, { database, logger }) => {
             nama_unsur AS unsur,
             COUNT(*) AS asset_count
             FROM unsur_alami
-            WHERE ST_Within(geom, (SELECT geom FROM kecamatan_konawe WHERE id = ?))
+            WHERE ST_Within(geom, (SELECT geom FROM kabupaten_konawe_utara WHERE id = ?))
             GROUP BY nama_unsur
         )
         
@@ -121,11 +121,11 @@ export default (router, { database, logger }) => {
         SELECT 
           SUM(luas_m2) AS total_utilized
         FROM aset_tanah
-        WHERE ST_Within(geom, (SELECT geom FROM kecamatan_konawe WHERE id = ?))
+        WHERE ST_Within(geom, (SELECT geom FROM kabupaten_konawe_utara WHERE id = ?))
       ),
     total_area AS (
         SELECT ST_Area(ST_Transform(geom, 3857)) AS total_area
-        FROM kecamatan_konawe
+        FROM kabupaten_konawe_utara
         WHERE id = ?
     )
       SELECT 
