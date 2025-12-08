@@ -16,6 +16,7 @@ type DetailData = {
   gallery: string[];
 };
 
+const showPdf = ref(false);
 const mapRefStore = useMapRef();
 const ResizePlugin: KeenSliderPlugin = (slider) => {
   const observer = new ResizeObserver(function () {
@@ -110,6 +111,13 @@ const clearSelection = () => {
     featureStore.setFeature(undefined);
   }, 500);
 };
+
+const isPdf = (url: string) => {
+  if (url.includes("drive.google.com")) {
+    return url.replace("/view", "/preview");
+  }
+  return url.includes(".pdf");
+};
 </script>
 
 <template>
@@ -132,9 +140,7 @@ const clearSelection = () => {
         :fontControlled="false"
         class="w-12 h-12 text-brand-500"
       />
-      <h4 class="text-sm text-grey-50">
-        Feature Detail will be shown here.
-      </h4>
+      <h4 class="text-sm text-grey-50">Feature Detail will be shown here.</h4>
       <p class="text-xs text-grey-400">
         Please click layer feature first to show the feature properties here.
       </p>
@@ -169,9 +175,7 @@ const clearSelection = () => {
         :fontControlled="false"
         class="w-12 h-12 text-brand-500"
       />
-      <h4 class="text-sm text-grey-50">
-        Content structure has not been set.
-      </h4>
+      <h4 class="text-sm text-grey-50">Content structure has not been set.</h4>
       <p class="text-xs text-grey-400">
         Please contact data owner to set content structure for this layer
         feature detail.
@@ -216,15 +220,35 @@ const clearSelection = () => {
       <ul class="mt-3 space-y-3" v-if="detailData.attachments?.length">
         <p class="text-white text-sm">Attachment</p>
         <MapAttachmentLink
-          v-for="attachment in detailData.attachments"
+          v-for="(attachment, idx) in detailData.attachments"
+          :key="idx"
           :title="attachment.title"
           :description="attachment.description"
           :url="attachment.url"
           :icon="attachment.icon"
         />
+
+        <!-- Dynamically show PDF viewer for PDF attachments -->
+        <UButton
+          v-if="isPdf(detailData.attachments[0].url)"
+          color="primary"
+          @click="showPdf = true"
+        >
+          Open PDF Viewer
+        </UButton>
+
+        <MapPDFViewer
+          v-if="isPdf(detailData.attachments[0].url) && showPdf"
+          v-model="showPdf"
+          header-label="PDF Viewer - Sertifikat Tanah"
+          :title="detailData.attachments[0].title"
+          :file-name="detailData.attachments[0].title"
+          :pdf-url="detailData.attachments[0].url"
+        />
       </ul>
     </template>
   </div>
+
   <UButton
     v-if="featureStore.feature && detailData"
     label="Clear Feature Selection"
@@ -297,7 +321,7 @@ const clearSelection = () => {
             @click="() => slider?.moveToIdx(idx)"
             :class="[
               'rounded-sm w-16 h-16 object-cover',
-              idx === current && 'border-4 border-brand-500'
+              idx === current && 'border-4 border-brand-500',
             ]"
             v-for="(source, idx) of detailData.gallery
               .map((src, idx) =>

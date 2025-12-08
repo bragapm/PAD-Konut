@@ -13,10 +13,17 @@ export const useAnalysisResult = defineStore("analysisResult", () => {
     results.value = results.value.filter((r) => r.date !== date);
   }
 
+  const isOpenPDFViewer = ref<boolean>(false);
+  function setIsOpenPDFViewer(value: boolean) {
+    isOpenPDFViewer.value = value;
+  }
+
   return {
     results,
     setResults,
     addResult,
     removeResult,
+    isOpenPDFViewer,
+    setIsOpenPDFViewer
   };
 });
