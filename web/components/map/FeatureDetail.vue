@@ -16,7 +16,7 @@ type DetailData = {
   gallery: string[];
 };
 
-const showPdf = ref(false);
+// const showPdf = ref(false);
 const mapRefStore = useMapRef();
 const ResizePlugin: KeenSliderPlugin = (slider) => {
   const observer = new ResizeObserver(function () {
@@ -234,7 +234,7 @@ const isPdf = (url: string) => {
         </template>
 
         <!-- Dynamically show PDF viewer for PDF attachments -->
-        <UButton
+        <!-- <UButton
           v-if="isPdf(detailData.attachments[0].url)"
           color="primary"
           @click="showPdf = true"
@@ -249,7 +249,7 @@ const isPdf = (url: string) => {
           :title="detailData.attachments[0].title"
           :file-name="detailData.attachments[0].title"
           :pdf-url="detailData.attachments[0].url"
-        />
+        /> -->
       </ul>
     </template>
   </div>
