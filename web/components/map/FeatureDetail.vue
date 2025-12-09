@@ -188,7 +188,7 @@ const isPdf = (url: string) => {
         :source="detailData.markdown"
       />
 
-      <div v-if="detailData.gallery?.length">
+      <div v-if="detailData.gallery?.filter((item) => item !== '').length">
         <p class="text-white text-sm my-3">Image Gallery</p>
         <ul class="flex space-x-1 relative">
           <img
@@ -219,14 +219,19 @@ const isPdf = (url: string) => {
 
       <ul class="mt-3 space-y-3" v-if="detailData.attachments?.length">
         <p class="text-white text-sm">Attachment</p>
-        <MapAttachmentLink
+        <template
           v-for="(attachment, idx) in detailData.attachments"
           :key="idx"
-          :title="attachment.title"
-          :description="attachment.description"
-          :url="attachment.url"
-          :icon="attachment.icon"
-        />
+        >
+          <MapAttachmentLink
+            v-if="attachment.url !== '#'"
+            :title="attachment.title"
+            :description="attachment.description"
+            :url="attachment.url"
+            :icon="attachment.icon"
+          />
+          <p v-else class="text-white text-sm">-</p>
+        </template>
 
         <!-- Dynamically show PDF viewer for PDF attachments -->
         <UButton
